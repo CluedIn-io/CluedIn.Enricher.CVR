@@ -1,0 +1,42 @@
+name: $(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  branches:
+    include:
+    - master
+    - develop
+  tags:
+    include:
+      - v*
+  paths:
+    exclude:
+    - '*.md'
+
+pr:
+  branches:
+    include:
+    - develop
+    - master
+    - release/*
+  paths:
+    exclude:
+    - '*.md'
+
+resources:
+  repositories:
+    - repository: templates
+      type: github
+      name: CluedIn-io/AzurePipelines.Templates
+      endpoint: 'CluedIn-io'
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  Dotnet.Skip.First.Time.Experience: 'True'
+  testFolderPath: '$(Build.SourcesDirectory)/test'
+
+steps:
+- template: crawler.default.build.yml@templates
+
+- template: documentation.publish.yml@templates

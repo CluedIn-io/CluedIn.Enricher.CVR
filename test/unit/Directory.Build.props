@@ -1,0 +1,9 @@
+<Project>
+  <Import Project="..\Directory.Build.props" />
+
+  <ItemGroup>
+    <PackageReference Include="Moq" Version="4.5.30" />
+    <PackageReference Include="Should" Version="1.1.20" />
+  </ItemGroup>
+
+</Project>
