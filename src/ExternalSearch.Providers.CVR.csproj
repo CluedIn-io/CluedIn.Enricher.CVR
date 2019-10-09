@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{E5832F12-6BB8-4ACA-AB23-F82888FF3971}</ProjectGuid>
     <RootNamespace>CluedIn.ExternalSearch.Providers.CVR</RootNamespace>
@@ -28,15 +28,9 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Net.Http" />
   </ItemGroup>
-   <ItemGroup>
-    <PackageReference Include="CluedIn.ExternalSearch">
-      <Version>2.4.0-alpha0089</Version>
-    </PackageReference>
-    <PackageReference Include="MediaToolkit">
-      <Version>1.1.0.1</Version>
-    </PackageReference>
-    <PackageReference Include="SerilogAnalyzer">
-      <Version>0.15.0</Version>
-    </PackageReference>
+  <ItemGroup>
+    <PackageReference Include="CluedIn.ExternalSearch" Version="2.4.0-alpha0100" />
+    <PackageReference Include="MediaToolkit" Version="1.1.0.1" />
+    <PackageReference Include="SerilogAnalyzer" Version="0.15.0" />
   </ItemGroup>
 </Project>
