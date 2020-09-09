@@ -29,6 +29,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{E1A76004
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9BD54E81-D9C8-4419-82B8-8EE6CC7E2647}"
 	ProjectSection(SolutionItems) = preProject
+		Packages.props = Packages.props
 		README.md = README.md
 	EndProjectSection
 EndProject
@@ -50,7 +51,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Git", "Git", "{17EE3C8D-BAE
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExternalSearch.Providers.CVR", "src\ExternalSearch.Providers.CVR.csproj", "{E5832F12-6BB8-4ACA-AB23-F82888FF3971}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExternalSearch.CVR.Integration.Tests", "test\integration\ExternalSearch.CVR.Integration.Tests\ExternalSearch.CVR.Integration.Tests.csproj", "{1BE955A9-BBE9-46D1-89B2-D7B9B557F44A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExternalSearch.CVR.Integration.Tests", "test\integration\ExternalSearch.CVR.Integration.Tests\ExternalSearch.CVR.Integration.Tests.csproj", "{1BE955A9-BBE9-46D1-89B2-D7B9B557F44A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,36 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <ProjectGuid>{E5832F12-6BB8-4ACA-AB23-F82888FF3971}</ProjectGuid>
-    <RootNamespace>CluedIn.ExternalSearch.Providers.CVR</RootNamespace>
-    <AssemblyName>CluedIn.ExternalSearch.Providers.CVR</AssemblyName>
-    <TargetFramework>net452</TargetFramework>
-    <AssemblyTitle>ExternalSearch.Providers.CVR</AssemblyTitle>
-    <Company>CluedIn</Company>
-    <Product>ExternalSearch.Providers.CVR</Product>
-    <Copyright>Copyright (c) 2019 Clued In. All rights reserved.</Copyright>
-    <OutputPath>bin\$(Configuration)</OutputPath>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugType>full</DebugType>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-  </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="domainname-parser" Version="999.1.15" />
-    <PackageReference Include="EntityFramework" Version="6.1.2" />
-    <PackageReference Include="Microsoft.Net.Http" Version="2.2.29" />
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
-    <PackageReference Include="RestSharp" Version="105.2.3" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Net.Http" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="CluedIn.ExternalSearch" Version="2.4.0-alpha0100" />
-    <PackageReference Include="MediaToolkit" Version="1.1.0.1" />
-    <PackageReference Include="SerilogAnalyzer" Version="0.15.0" />
+    <PackageReference Include="CluedIn.ExternalSearch" />
+    <PackageReference Include="CluedIn.Crawling" />
+    <PackageReference Include="CluedIn.Core" />
   </ItemGroup>
 </Project>

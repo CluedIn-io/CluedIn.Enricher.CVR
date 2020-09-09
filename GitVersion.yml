@@ -1,5 +1,6 @@
 # GitVersion.yml
 mode: ContinuousDelivery
+next-version: 3.0
 branches: {}
 ignore:
   sha: []

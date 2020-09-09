@@ -1,0 +1,41 @@
+<Project>
+  <PropertyGroup Label="Dependency Versions">
+    <_ComponentHost>2.0.0-alpha-14</_ComponentHost>
+    <_AutoFixture>4.11.0</_AutoFixture>
+    <_CluedIn>3.0.0-*</_CluedIn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+        Specified versions for dependencies in test projects
+        MUST SPECIFY IN CSPROJ AS <PackageReference Name="<depName>" />
+    -->
+    <PackageReference Update="Microsoft.NET.Test.Sdk" Version="16.5.0" />
+    <PackageReference Update="AutoFixture.Xunit2" Version="$(_AutoFixture)" />
+    <PackageReference Update="AutoFixture.Idioms" Version="$(_AutoFixture)" />
+    <PackageReference Update="AutoFixture.AutoMoq" Version="$(_AutoFixture)" />
+    <PackageReference Update="coverlet.msbuild" Version="2.8.0" />
+    <PackageReference Update="Serilog.Sinks.XUnit" Version="1.0.21" />
+    <PackageReference Update="xunit" Version="2.4.1" />
+    <PackageReference Update="xunit.runner.visualstudio" Version="2.4.1" />
+    <PackageReference Update="Moq" Version="4.13.1" />
+    <PackageReference Update="Shouldly" Version="3.0.2" />
+    <PackageReference Update="CluedIn.CluedIn.Testing.Base" Version="$(_CluedIn)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+        Specified versions for dependencies across the solution
+        MUST SPECIFY IN CSPROJ AS <PackageReference Name="<depName>" />
+    -->
+    <PackageReference Update="ComponentHost" Version="$(_ComponentHost)" />
+    <PackageReference Update="CluedIn.Crawling" Version="$(_CluedIn)" />
+    <PackageReference Update="CluedIn.CrawlerIntegrationTesting" Version="$(_CluedIn)" />
+    <PackageReference Update="CluedIn.Core" Version="$(_CluedIn)" />
+    <PackageReference Update="CluedIn.Core.Agent" Version="$(_CluedIn)" />
+    <PackageReference Update="CluedIn.Server" Version="$(_CluedIn)" />
+    <PackageReference Update="CluedIn.Server.Common.WebApi" Version="$(_CluedIn)" />
+    <PackageReference Update="CluedIn.ExternalSearch" Version="$(_CluedIn)" />
+
+  </ItemGroup>
+</Project>
