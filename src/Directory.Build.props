@@ -30,10 +30,6 @@
     <Title>$(RootNamespace)</Title>
     <Authors>$(Company)</Authors>
     <PackageProjectUrl>http://cluedin.com</PackageProjectUrl>
-    <PackageIcon>nugetlogo.png</PackageIcon>
   </PropertyGroup>
 
-  <ItemGroup Label="Package Includes">
-    <None Include="$(MSBuildThisFileDirectory)build\assets\nugetlogo.png" Pack="true" PackagePath="\" />
-  </ItemGroup>
 </Project>
