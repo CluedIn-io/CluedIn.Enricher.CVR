@@ -252,7 +252,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         /// <returns>The code origin</returns>
         private CodeOrigin GetCodeOrigin()
         {
-            return CodeOrigin.CluedIn.CreateSpecific("business-registry-dk");
+            return CodeOrigin.CluedIn;
         }
 
         /// <summary>Populates the metadata.</summary>

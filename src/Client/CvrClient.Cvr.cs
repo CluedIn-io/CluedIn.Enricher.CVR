@@ -51,11 +51,12 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
 
         public Result<CvrOrganization> GetCompanyByCvrNumber(int cvrNumber, Uri endPoint)
         {
+
             //var body = @"
             //    { ""from"" : 0, ""size"" : 1,
             //      ""query"": {
             //        ""term"": {
-            //          ""cvrNummer"": " + cvrNumber + @"
+            //          ""Vrvirksomhed.cvrNummer"": " + cvrNumber + @"
             //        }
             //      }
             //    }
