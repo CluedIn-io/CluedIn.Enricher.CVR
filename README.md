@@ -7,7 +7,11 @@ The CVR service allows searching by either a company's CVR number or name.
 
 ## Overview
 
-This repository contains the code and associated tests for enriching Danish Companies of Entities and Clues that have set a value for the Organization.Codes.CVR core vocabulary. 
+This repository contains the code and associated tests for enriching Danish Companies of Entities and Clues.
+The enricher creates searches for `Organization` entity properties which fulfill the following:
+
++ Its vocabulary is mapped to the `CluedInOrganization.CodesCVR` core vocabulary.
++ Its vocabulary is mapped to the `CluedInOrganization.OrganizationName` and another property mapped to `CluedInOrganization.AddressCountryCode` core vocabulary is either `"dk"`, `"danmark"` or `"denmark"`.
 
 ## Usage
 
