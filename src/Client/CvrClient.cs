@@ -76,10 +76,14 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
 
             if (document != null)
             {
-                var xbrlReport = ActionExtensions.ExecuteWithRetry(() => this.GetXbrlReport(document.DokumentUrl), isTransient: ex => ex.IsTransient());
+                try
+                {
+                    var xbrlReport = ActionExtensions.ExecuteWithRetry(() => this.GetXbrlReport(document.DokumentUrl), isTransient: ex => ex.IsTransient());
 
-                result.RawXbrl                  = xbrlReport.RawContent;
-                result.FinancialReportSummary   = xbrlReport.Data;
+                    result.RawXbrl                  = xbrlReport.RawContent;
+                    result.FinancialReportSummary   = xbrlReport.Data;
+                }
+                catch { }
             }
 
             return result;

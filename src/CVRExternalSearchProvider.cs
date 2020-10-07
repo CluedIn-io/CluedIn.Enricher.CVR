@@ -196,12 +196,12 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         {
             var resultItem = result.As<CvrResult>();
 
-            var code = this.GetOriginEntityCode(resultItem);
+            var code = this.GetOriginEntityCode(resultItem, request);
 
             var clue = new Clue(code, context.Organization);
             clue.Data.OriginProviderDefinitionId = this.Id;
 
-            this.PopulateMetadata(clue.Data.EntityData, resultItem);
+            this.PopulateMetadata(clue.Data.EntityData, resultItem, request);
 
             return new[] { clue };
         }
@@ -214,7 +214,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         public override IEntityMetadata GetPrimaryEntityMetadata(ExecutionContext context, IExternalSearchQueryResult result, IExternalSearchRequest request)
         {
             var resultItem = result.As<CvrResult>();
-            return this.CreateMetadata(resultItem);
+            return this.CreateMetadata(resultItem, request);
         }
 
 
@@ -231,11 +231,11 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         /// <summary>Creates the metadata.</summary>
         /// <param name="resultItem">The result item.</param>
         /// <returns>The metadata.</returns>
-        private IEntityMetadata CreateMetadata(IExternalSearchQueryResult<CvrResult> resultItem)
+        private IEntityMetadata CreateMetadata(IExternalSearchQueryResult<CvrResult> resultItem, IExternalSearchRequest request)
         {
             var metadata = new EntityMetadataPart();
 
-            this.PopulateMetadata(metadata, resultItem);
+            this.PopulateMetadata(metadata, resultItem, request);
 
             return metadata;
         }
@@ -243,24 +243,24 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         /// <summary>Gets the origin entity code.</summary>
         /// <param name="resultItem">The result item.</param>
         /// <returns>The origin entity code.</returns>
-        private EntityCode GetOriginEntityCode(IExternalSearchQueryResult<CvrResult> resultItem)
+        private EntityCode GetOriginEntityCode(IExternalSearchQueryResult<CvrResult> resultItem, IExternalSearchRequest request)
         {
-            return new EntityCode(EntityType.Organization, this.GetCodeOrigin(), resultItem.Data.CvrNumber);
+            return new EntityCode(EntityType.Organization, this.GetCodeOrigin(request), resultItem.Data.CvrNumber.ToString());
         }
 
         /// <summary>Gets the code origin.</summary>
         /// <returns>The code origin</returns>
-        private CodeOrigin GetCodeOrigin()
+        private CodeOrigin GetCodeOrigin(IExternalSearchRequest request)
         {
-            return CodeOrigin.CluedIn;
+            return request.EntityMetaData.OriginEntityCode.Origin;
         }
 
         /// <summary>Populates the metadata.</summary>
         /// <param name="metadata">The metadata.</param>
         /// <param name="resultItem">The result item.</param>
-        private void PopulateMetadata(IEntityMetadata metadata, IExternalSearchQueryResult<CvrResult> resultItem)
+        private void PopulateMetadata(IEntityMetadata metadata, IExternalSearchQueryResult<CvrResult> resultItem, IExternalSearchRequest request)
         {
-            var code = this.GetOriginEntityCode(resultItem);
+            var code = this.GetOriginEntityCode(resultItem, request);
 
             metadata.EntityType             = EntityType.Organization;
             metadata.Name                   = resultItem.Data.Organization.Name;
