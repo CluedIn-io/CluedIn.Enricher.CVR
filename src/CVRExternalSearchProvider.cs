@@ -252,7 +252,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         /// <returns>The code origin</returns>
         private CodeOrigin GetCodeOrigin(IExternalSearchRequest request)
         {
-            return request.EntityMetaData.OriginEntityCode.Origin;
+            return CodeOrigin.CluedIn.CreateSpecific("CVR");
         }
 
         /// <summary>Populates the metadata.</summary>
