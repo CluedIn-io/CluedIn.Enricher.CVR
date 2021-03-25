@@ -1,6 +1,10 @@
 # CluedIn.Enricher.CVR
 
-CluedIn External Search for Danish CVR Crawler.
+CluedIn External Search Provider for Danish CVR.
+
+CVR Enriches your existing `EntityType.Organization` data by looking up Danish [CVR](https://datacvr.virk.dk/data/) registry and bringing additional data back, such as official registered Name, CVR Number, Sales data, Historical overview, Contact details, Fiscal summary, Industry and high-quality last known registereed Address.
+
+Enricher is setup in a way that it can run by querying by `organization.name` core vocabulary key or `organization.codescvr`. 
 
 ------
 
