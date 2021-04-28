@@ -19,7 +19,6 @@ using CluedIn.ExternalSearch;
 using CluedIn.ExternalSearch.Providers.CVR;
 using CluedIn.Testing.Base.Context;
 using CluedIn.Testing.Base.Processing.Actors;
-using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -27,7 +26,7 @@ namespace ExternalSearch.CVR.Integration.Tests
 {
     public class CvrBitTests
     {
-        [Fact]
+        [Fact(Skip = "GitHub Issue 829 - ref https://github.com/CluedIn-io/CluedIn/issues/829")]
         public void CvrNumberTest()
         {
             // Arrange

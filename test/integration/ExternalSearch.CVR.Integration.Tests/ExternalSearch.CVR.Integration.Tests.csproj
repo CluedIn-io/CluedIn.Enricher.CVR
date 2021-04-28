@@ -5,6 +5,5 @@
   <ItemGroup>
     <PackageReference Include="CluedIn.CrawlerIntegrationTesting" />
     <PackageReference Include="CluedIn.CluedIn.Testing.Base" />
-    <PackageReference Include="Microsoft.Extensions.Logging" />
   </ItemGroup>
 </Project>
