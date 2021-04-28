@@ -21,6 +21,7 @@
     <PackageReference Update="Moq" Version="4.13.1" />
     <PackageReference Update="Shouldly" Version="3.0.2" />
     <PackageReference Update="CluedIn.CluedIn.Testing.Base" Version="$(_CluedIn)" />
+    <PackageReference Update="Microsoft.Extensions.Logging" Version="5.0.0" />
   </ItemGroup>
 
   <ItemGroup>
