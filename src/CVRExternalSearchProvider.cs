@@ -15,6 +15,9 @@ using System.Linq;
 using CluedIn.Core;
 using CluedIn.Core.Data;
 using CluedIn.Core.Data.Parts;
+using CluedIn.Core.Data.Relational;
+using CluedIn.Core.ExternalSearch;
+using CluedIn.Core.Providers;
 using CluedIn.Crawling.Helpers;
 using CluedIn.ExternalSearch.Filters;
 using CluedIn.ExternalSearch.Providers.CVR.Client;
@@ -24,12 +27,13 @@ using CluedIn.ExternalSearch.Providers.CVR.Vocabularies;
 using CluedIn.Processing.EntityResolution;
 
 using DomainNameParser;
+using EntityType = CluedIn.Core.Data.EntityType;
 
 namespace CluedIn.ExternalSearch.Providers.CVR
 {
     /// <summary>The CVR external search provider</summary>
     /// <seealso cref="CluedIn.ExternalSearch.ExternalSearchProviderBase" />
-    public class CvrExternalSearchProvider : ExternalSearchProviderBase
+    public class CvrExternalSearchProvider : ExternalSearchProviderBase, IExtendedEnricherMetadata
     {
         /**********************************************************************************************************
          * CONSTRUCTORS
@@ -360,5 +364,13 @@ namespace CluedIn.ExternalSearch.Providers.CVR
 
             metadata.Properties[vocabulary.Formatted]           = address.ToString();
         }
+
+        public string Icon { get; } = "Resources.logo.svg";
+        public string Domain { get; } = "https://datacvr.virk.dk/data";
+        public string About { get; } = "CVR is the Danish state's master register of information about businesses.";
+        public AuthMethods AuthMethods { get; } = null;
+        public IEnumerable<Control> Properties { get; } = null;
+        public Guide Guide { get; } = null;
+        public IntegrationType Type { get; } = IntegrationType.Cloud;
     }
 }
