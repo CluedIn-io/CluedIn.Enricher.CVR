@@ -5,6 +5,13 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\logo.svg" />
   </ItemGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+        <LangVersion>latest</LangVersion>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+        <LangVersion>latest</LangVersion>
+    </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CluedIn.ExternalSearch" />
     <PackageReference Include="CluedIn.Crawling" />
