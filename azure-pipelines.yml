@@ -18,6 +18,7 @@ pr:
     - develop
     - master
     - release/*
+    - ama/*
   paths:
     exclude:
     - '*.md'
