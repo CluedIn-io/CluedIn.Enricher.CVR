@@ -33,8 +33,10 @@ namespace CluedIn.ExternalSearch.Providers.CVR
 {
     /// <summary>The CVR external search provider</summary>
     /// <seealso cref="CluedIn.ExternalSearch.ExternalSearchProviderBase" />
-    public class CvrExternalSearchProvider : ExternalSearchProviderBase, IExtendedEnricherMetadata
+    public class CvrExternalSearchProvider : ExternalSearchProviderBase, IExtendedEnricherMetadata, IConfigurableExternalSearchProvider
     {
+        private static readonly EntityType[] AcceptedEntityTypes = { EntityType.Organization };
+
         /**********************************************************************************************************
          * CONSTRUCTORS
          **********************************************************************************************************/
@@ -43,7 +45,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         /// Initializes a new instance of the <see cref="CvrExternalSearchProvider" /> class.
         /// </summary>
         public CvrExternalSearchProvider()
-            : base(Constants.ExternalSearchProviders.CVRId, EntityType.Organization)
+            : base(Constants.ProviderId, AcceptedEntityTypes)
         {
         }
 
@@ -62,8 +64,8 @@ namespace CluedIn.ExternalSearch.Providers.CVR
 
             var existingResults = request.GetQueryResults<CvrResult>(this).ToList();
 
-            var postFixes = new[] { "A/S", "AS", "ApS", "IVS", "I/S", "IS", "K/S", "KS", "G/S", "GS", "P/S", "PS", "Enkeltmandsvirksomhed", "Forening", "Partsrederi", "Selskab", "virksomhed" }.Select(v => v.ToLowerInvariant()).ToHashSet();
-            var contains  = new[] { " dk", "dk ", "denmark", "danmark", "dansk", "æ", "ø", "å" }.Select(v => v.ToLowerInvariant()).ToHashSet();
+            var postFixes = EnumerableExtensions.ToHashSet(new[] { "A/S", "AS", "ApS", "IVS", "I/S", "IS", "K/S", "KS", "G/S", "GS", "P/S", "PS", "Enkeltmandsvirksomhed", "Forening", "Partsrederi", "Selskab", "virksomhed" }.Select(v => v.ToLowerInvariant()));
+            var contains  = EnumerableExtensions.ToHashSet(new[] { " dk", "dk ", "denmark", "danmark", "dansk", "æ", "ø", "å" }.Select(v => v.ToLowerInvariant()));
 
             Func<string, bool> cvrFilter            = value => existingResults.Any(r => string.Equals(r.Data.CvrNumber.ToString(CultureInfo.InvariantCulture), value, StringComparison.InvariantCultureIgnoreCase));
             Func<string, bool> nameFilter           = value => OrganizationFilters.NameFilter(context, value);
@@ -92,7 +94,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             // Query Input
             var entityType          = request.EntityMetaData.EntityType;
             var cvrNumber           = request.QueryParameters.GetValue(CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.CodesCVR, null);
-            var organizationName    = request.QueryParameters.GetValue(CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.OrganizationName, new HashSet<string>()).ToHashSet();
+            var organizationName    = EnumerableExtensions.ToHashSet(request.QueryParameters.GetValue(CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.OrganizationName, new HashSet<string>()));
             var country             = request.QueryParameters.GetValue(CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.AddressCountryCode, null);
             var website             = request.QueryParameters.GetValue(CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.Website, null);
 
@@ -132,7 +134,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             }
             else if (organizationName != null)
             {
-                var values = organizationName.Select(NameNormalization.Normalize).ToHashSet();
+                var values = EnumerableExtensions.ToHashSet(organizationName.Select(NameNormalization.Normalize));
 
                 foreach (var value in values.Where(v => !nameFilter(v)))
                 {
@@ -365,12 +367,44 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             metadata.Properties[vocabulary.Formatted]           = address.ToString();
         }
 
-        public string Icon { get; } = "Resources.logo.svg";
-        public string Domain { get; } = "https://datacvr.virk.dk/data";
-        public string About { get; } = "CVR is the Danish state's master register of information about businesses.";
-        public AuthMethods AuthMethods { get; } = null;
-        public IEnumerable<Control> Properties { get; } = null;
-        public Guide Guide { get; } = null;
-        public IntegrationType Type { get; } = IntegrationType.Cloud;
+        public IEnumerable<EntityType> Accepts(IDictionary<string, object> config, IProvider provider)
+        {
+            return AcceptedEntityTypes;
+        }
+
+        public IEnumerable<IExternalSearchQuery> BuildQueries(ExecutionContext context, IExternalSearchRequest request, IDictionary<string, object> config, IProvider provider)
+        {
+            return BuildQueries(context, request);
+        }
+
+        public IEnumerable<IExternalSearchQueryResult> ExecuteSearch(ExecutionContext context, IExternalSearchQuery query, IDictionary<string, object> config, IProvider provider)
+        {
+            return ExecuteSearch(context, query);
+        }
+
+        public IEnumerable<Clue> BuildClues(ExecutionContext context, IExternalSearchQuery query, IExternalSearchQueryResult result, IExternalSearchRequest request, IDictionary<string, object> config, IProvider provider)
+        {
+            return BuildClues(context, query, result, request);
+        }
+
+        public IEntityMetadata GetPrimaryEntityMetadata(ExecutionContext context, IExternalSearchQueryResult result, IExternalSearchRequest request, IDictionary<string, object> config, IProvider provider)
+        {
+            return GetPrimaryEntityMetadata(context, result, request);
+        }
+
+        public IPreviewImage GetPrimaryEntityPreviewImage(ExecutionContext context, IExternalSearchQueryResult result, IExternalSearchRequest request, IDictionary<string, object> config, IProvider provider)
+        {
+            return GetPrimaryEntityPreviewImage(context, result, request);
+        }
+
+
+        public string Icon { get; } = Constants.Icon;
+        public string Domain { get; } = Constants.Domain;
+        public string About { get; } = Constants.About;
+
+        public AuthMethods AuthMethods { get; } = Constants.AuthMethods;
+        public IEnumerable<Control> Properties { get; } = Constants.Properties;
+        public Guide Guide { get; } = Constants.Guide;
+        public IntegrationType Type { get; } = Constants.IntegrationType;
     }
 }

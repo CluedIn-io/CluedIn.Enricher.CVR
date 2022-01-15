@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <ItemGroup>
+        <None Remove="D:\Projects\CluedIn\CluedIn.Enricher.CVR\build\assets\nugetlogo.png" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="CluedIn.Core" />
+        <PackageReference Include="ComponentHost" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\ExternalSearch.Providers.CVR\ExternalSearch.Providers.CVR.csproj" />
+    </ItemGroup>
+
+</Project>
