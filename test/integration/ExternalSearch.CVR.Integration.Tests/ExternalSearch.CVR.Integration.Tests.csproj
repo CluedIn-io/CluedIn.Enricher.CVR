@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\ExternalSearch.Providers.CVR.csproj" />
+    <PackageReference Include="CluedIn.CrawlerIntegrationTesting" />
+    <PackageReference Include="CluedIn.Testing.Base" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CluedIn.CrawlerIntegrationTesting" />
-    <PackageReference Include="CluedIn.CluedIn.Testing.Base" />
+    <ProjectReference Include="..\..\..\src\ExternalSearch.Providers.CVR\ExternalSearch.Providers.CVR.csproj" />
   </ItemGroup>
 </Project>

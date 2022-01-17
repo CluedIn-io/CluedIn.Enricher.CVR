@@ -3,14 +3,10 @@ name: $(Date:yyyyMMdd)$(Rev:.r)
 trigger:
   branches:
     include:
-    - master
     - develop
-  tags:
-    include:
-      - v*
-  paths:
-    exclude:
-    - '*.md'
+    - master
+    - release/*
+    - ama/*
 
 pr:
   branches:
@@ -29,6 +25,7 @@ resources:
       type: github
       name: CluedIn-io/AzurePipelines.Templates
       endpoint: 'CluedIn-io'
+      ref: refs/heads/refactor
 
 pool:
   vmImage: 'windows-latest'
@@ -41,18 +38,12 @@ variables:
     value: true
   - name: DOTNET_CLI_TELEMETRY_OPTOUT
     value: true
+  - name: buildConfiguration
+    value: Release
 
 steps:
-# Configure NuGet
-- pwsh: |
-    @('develop','release','AzurePipelines') | ForEach-Object{
-        dotnet nuget update  source $_ -p $env:NUGET_KEY -u VssSessionToken --configfile nuget.config
-    }
-  condition: and(succeeded(), variables['nuget.key'])
-  displayName: 'Add api token to access nuget artifacts'
-  env:
-    NUGET_KEY: $(nuget.key)
-    
-- template: crawler.netcore.build.yml@templates
 
-- template: documentation.publish.yml@templates
+- task: NuGetAuthenticate@0
+  displayName: 'Authenticate with nuget'
+
+- template: crawler.build.yml@templates
