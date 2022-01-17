@@ -1,10 +1,9 @@
 <Project>
-    <PropertyGroup Label="Dependency Versions">
-        <_ComponentHost>2.0.0</_ComponentHost>
-        <_AutoFixture>4.11.0</_AutoFixture>
-        <_CluedIn>3.3.0-alpha*</_CluedIn>
-    </PropertyGroup>
-
+  <PropertyGroup Label="Dependency Versions">
+    <_ComponentHost>2.0.0</_ComponentHost>
+    <_AutoFixture>4.11.0</_AutoFixture>
+    <_CluedIn>3.3.0-ama.*</_CluedIn>
+  </PropertyGroup>
   <ItemGroup>
     <!--
         Specified versions for dependencies in test projects
@@ -20,9 +19,8 @@
     <PackageReference Update="xunit.runner.visualstudio" Version="2.4.1" />
     <PackageReference Update="Moq" Version="4.13.1" />
     <PackageReference Update="Shouldly" Version="3.0.2" />
-        <PackageReference Update="CluedIn.Testing.Base" Version="$(_CluedIn)" />
+    <PackageReference Update="CluedIn.Testing.Base" Version="$(_CluedIn)" />
   </ItemGroup>
-
   <ItemGroup>
     <!--
         Specified versions for dependencies across the solution
@@ -36,6 +34,5 @@
     <PackageReference Update="CluedIn.Server" Version="$(_CluedIn)" />
     <PackageReference Update="CluedIn.Server.Common.WebApi" Version="$(_CluedIn)" />
     <PackageReference Update="CluedIn.ExternalSearch" Version="$(_CluedIn)" />
-
   </ItemGroup>
 </Project>
