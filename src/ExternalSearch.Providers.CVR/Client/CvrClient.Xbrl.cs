@@ -5,7 +5,7 @@ using System.Net;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
-
+using CluedIn.Core;
 using CluedIn.ExternalSearch.Providers.CVR.Model;
 using CluedIn.ExternalSearch.Providers.CVR.Model.Xbrl;
 
@@ -90,9 +90,9 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
                     if (informationOnTypeOfSubmittedReport != null && informationOnTypeOfSubmittedReport.Value == "Årsrapport")
                         contextName = informationOnTypeOfSubmittedReport.Attribute("contextRef").Value;
                     else
-                        contextName = contexts["aktuelle periode enkelt selskab"];
+                        contexts.TryGetValue("aktuelle periode enkelt selskab", out contextName);
 
-                    var endPeriodContext = contexts["slutdato aktuelle periode enkelt selskab"];
+                    contexts.TryGetValue("slutdato aktuelle periode enkelt selskab", out var endPeriodContext);
 
                     XElement reportingPeriodEndDateElement  = doc.Root.Element(c + "ReportingPeriodEndDate");
                     XElement dateOfApprovalOfReportElement  = doc.Root.Element(c + "DateOfApprovalOfReport");
@@ -147,7 +147,10 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
 
             var v        = value.Value;
             var unitRef  = value.Attribute("unitRef").Value;
-            var decimals = value.Attribute("decimals").Value;
+
+            string decimals = "0";
+            if (value.Attribute("decimals") != null)
+                decimals = value.Attribute("decimals").Value;
 
             var measure = value.Document.Root.XPathSelectElement("def:unit[@id = '" + unitRef + "']/def:measure", namespaceManager);
 

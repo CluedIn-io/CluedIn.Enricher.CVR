@@ -15,6 +15,9 @@ using System.Linq;
 using CluedIn.Core;
 using CluedIn.Core.Data;
 using CluedIn.Core.Data.Parts;
+using CluedIn.Core.Data.Relational;
+using CluedIn.Core.ExternalSearch;
+using CluedIn.Core.Providers;
 using CluedIn.Crawling.Helpers;
 using CluedIn.ExternalSearch.Filters;
 using CluedIn.ExternalSearch.Providers.CVR.Client;
@@ -24,13 +27,16 @@ using CluedIn.ExternalSearch.Providers.CVR.Vocabularies;
 using CluedIn.Processing.EntityResolution;
 
 using DomainNameParser;
+using EntityType = CluedIn.Core.Data.EntityType;
 
 namespace CluedIn.ExternalSearch.Providers.CVR
 {
     /// <summary>The CVR external search provider</summary>
     /// <seealso cref="CluedIn.ExternalSearch.ExternalSearchProviderBase" />
-    public class CvrExternalSearchProvider : ExternalSearchProviderBase
+    public class CvrExternalSearchProvider : ExternalSearchProviderBase, IExtendedEnricherMetadata, IConfigurableExternalSearchProvider
     {
+        private static readonly EntityType[] AcceptedEntityTypes = { EntityType.Organization };
+
         /**********************************************************************************************************
          * CONSTRUCTORS
          **********************************************************************************************************/
@@ -39,7 +45,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         /// Initializes a new instance of the <see cref="CvrExternalSearchProvider" /> class.
         /// </summary>
         public CvrExternalSearchProvider()
-            : base(Constants.ExternalSearchProviders.CVRId, EntityType.Organization)
+            : base(Constants.ProviderId, AcceptedEntityTypes)
         {
         }
 
@@ -58,8 +64,8 @@ namespace CluedIn.ExternalSearch.Providers.CVR
 
             var existingResults = request.GetQueryResults<CvrResult>(this).ToList();
 
-            var postFixes = new[] { "A/S", "AS", "ApS", "IVS", "I/S", "IS", "K/S", "KS", "G/S", "GS", "P/S", "PS", "Enkeltmandsvirksomhed", "Forening", "Partsrederi", "Selskab", "virksomhed" }.Select(v => v.ToLowerInvariant()).ToHashSet();
-            var contains  = new[] { " dk", "dk ", "denmark", "danmark", "dansk", "æ", "ø", "å" }.Select(v => v.ToLowerInvariant()).ToHashSet();
+            var postFixes = EnumerableExtensions.ToHashSet(new[] { "A/S", "AS", "ApS", "IVS", "I/S", "IS", "K/S", "KS", "G/S", "GS", "P/S", "PS", "Enkeltmandsvirksomhed", "Forening", "Partsrederi", "Selskab", "virksomhed" }.Select(v => v.ToLowerInvariant()));
+            var contains  = EnumerableExtensions.ToHashSet(new[] { " dk", "dk ", "denmark", "danmark", "dansk", "æ", "ø", "å" }.Select(v => v.ToLowerInvariant()));
 
             Func<string, bool> cvrFilter            = value => existingResults.Any(r => string.Equals(r.Data.CvrNumber.ToString(CultureInfo.InvariantCulture), value, StringComparison.InvariantCultureIgnoreCase));
             Func<string, bool> nameFilter           = value => OrganizationFilters.NameFilter(context, value);
@@ -88,7 +94,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             // Query Input
             var entityType          = request.EntityMetaData.EntityType;
             var cvrNumber           = request.QueryParameters.GetValue(CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.CodesCVR, null);
-            var organizationName    = request.QueryParameters.GetValue(CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.OrganizationName, new HashSet<string>()).ToHashSet();
+            var organizationName    = EnumerableExtensions.ToHashSet(request.QueryParameters.GetValue(CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.OrganizationName, new HashSet<string>()));
             var country             = request.QueryParameters.GetValue(CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.AddressCountryCode, null);
             var website             = request.QueryParameters.GetValue(CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.Website, null);
 
@@ -128,7 +134,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             }
             else if (organizationName != null)
             {
-                var values = organizationName.Select(NameNormalization.Normalize).ToHashSet();
+                var values = EnumerableExtensions.ToHashSet(organizationName.Select(NameNormalization.Normalize));
 
                 foreach (var value in values.Where(v => !nameFilter(v)))
                 {
@@ -196,12 +202,12 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         {
             var resultItem = result.As<CvrResult>();
 
-            var code = this.GetOriginEntityCode(resultItem);
+            var code = this.GetOriginEntityCode(resultItem, request);
 
             var clue = new Clue(code, context.Organization);
             clue.Data.OriginProviderDefinitionId = this.Id;
 
-            this.PopulateMetadata(clue.Data.EntityData, resultItem);
+            this.PopulateMetadata(clue.Data.EntityData, resultItem, request);
 
             return new[] { clue };
         }
@@ -214,7 +220,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         public override IEntityMetadata GetPrimaryEntityMetadata(ExecutionContext context, IExternalSearchQueryResult result, IExternalSearchRequest request)
         {
             var resultItem = result.As<CvrResult>();
-            return this.CreateMetadata(resultItem);
+            return this.CreateMetadata(resultItem, request);
         }
 
 
@@ -231,11 +237,11 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         /// <summary>Creates the metadata.</summary>
         /// <param name="resultItem">The result item.</param>
         /// <returns>The metadata.</returns>
-        private IEntityMetadata CreateMetadata(IExternalSearchQueryResult<CvrResult> resultItem)
+        private IEntityMetadata CreateMetadata(IExternalSearchQueryResult<CvrResult> resultItem, IExternalSearchRequest request)
         {
             var metadata = new EntityMetadataPart();
 
-            this.PopulateMetadata(metadata, resultItem);
+            this.PopulateMetadata(metadata, resultItem, request);
 
             return metadata;
         }
@@ -243,24 +249,24 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         /// <summary>Gets the origin entity code.</summary>
         /// <param name="resultItem">The result item.</param>
         /// <returns>The origin entity code.</returns>
-        private EntityCode GetOriginEntityCode(IExternalSearchQueryResult<CvrResult> resultItem)
+        private EntityCode GetOriginEntityCode(IExternalSearchQueryResult<CvrResult> resultItem, IExternalSearchRequest request)
         {
-            return new EntityCode(EntityType.Organization, this.GetCodeOrigin(), resultItem.Data.CvrNumber);
+            return new EntityCode(EntityType.Organization, this.GetCodeOrigin(request), resultItem.Data.CvrNumber.ToString());
         }
 
         /// <summary>Gets the code origin.</summary>
         /// <returns>The code origin</returns>
-        private CodeOrigin GetCodeOrigin()
+        private CodeOrigin GetCodeOrigin(IExternalSearchRequest request)
         {
-            return CodeOrigin.CluedIn.CreateSpecific("business-registry-dk");
+            return CodeOrigin.CluedIn.CreateSpecific("CVR");
         }
 
         /// <summary>Populates the metadata.</summary>
         /// <param name="metadata">The metadata.</param>
         /// <param name="resultItem">The result item.</param>
-        private void PopulateMetadata(IEntityMetadata metadata, IExternalSearchQueryResult<CvrResult> resultItem)
+        private void PopulateMetadata(IEntityMetadata metadata, IExternalSearchQueryResult<CvrResult> resultItem, IExternalSearchRequest request)
         {
-            var code = this.GetOriginEntityCode(resultItem);
+            var code = this.GetOriginEntityCode(resultItem, request);
 
             metadata.EntityType             = EntityType.Organization;
             metadata.Name                   = resultItem.Data.Organization.Name;
@@ -360,5 +366,45 @@ namespace CluedIn.ExternalSearch.Providers.CVR
 
             metadata.Properties[vocabulary.Formatted]           = address.ToString();
         }
+
+        public IEnumerable<EntityType> Accepts(IDictionary<string, object> config, IProvider provider)
+        {
+            return AcceptedEntityTypes;
+        }
+
+        public IEnumerable<IExternalSearchQuery> BuildQueries(ExecutionContext context, IExternalSearchRequest request, IDictionary<string, object> config, IProvider provider)
+        {
+            return BuildQueries(context, request);
+        }
+
+        public IEnumerable<IExternalSearchQueryResult> ExecuteSearch(ExecutionContext context, IExternalSearchQuery query, IDictionary<string, object> config, IProvider provider)
+        {
+            return ExecuteSearch(context, query);
+        }
+
+        public IEnumerable<Clue> BuildClues(ExecutionContext context, IExternalSearchQuery query, IExternalSearchQueryResult result, IExternalSearchRequest request, IDictionary<string, object> config, IProvider provider)
+        {
+            return BuildClues(context, query, result, request);
+        }
+
+        public IEntityMetadata GetPrimaryEntityMetadata(ExecutionContext context, IExternalSearchQueryResult result, IExternalSearchRequest request, IDictionary<string, object> config, IProvider provider)
+        {
+            return GetPrimaryEntityMetadata(context, result, request);
+        }
+
+        public IPreviewImage GetPrimaryEntityPreviewImage(ExecutionContext context, IExternalSearchQueryResult result, IExternalSearchRequest request, IDictionary<string, object> config, IProvider provider)
+        {
+            return GetPrimaryEntityPreviewImage(context, result, request);
+        }
+
+
+        public string Icon { get; } = Constants.Icon;
+        public string Domain { get; } = Constants.Domain;
+        public string About { get; } = Constants.About;
+
+        public AuthMethods AuthMethods { get; } = Constants.AuthMethods;
+        public IEnumerable<Control> Properties { get; } = Constants.Properties;
+        public Guide Guide { get; } = Constants.Guide;
+        public IntegrationType Type { get; } = Constants.IntegrationType;
     }
 }

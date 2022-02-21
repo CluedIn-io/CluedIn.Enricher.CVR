@@ -1,26 +1,21 @@
 <Project>
+    <!-- Ensure the targets for Central package management are imported -->
+    <Import Project="Sdk.targets" Sdk="Microsoft.Build.CentralPackageVersions"/>
+    
+    <Target Name="ValidateAssemblyMeta" BeforeTargets="Build">
+        <Warning Code="CIQ0001" Text="`Product` [$(Product)] must be 'CluedIn'." Condition="'$(Product)' != 'CluedIn'"/>
+        <Warning Code="CIQ0002" Text="`AssemblyTitle` [$(AssemblyTitle)] must match project name [$(MSBuildProjectName)]." Condition="'$(AssemblyTitle)' != '$(MSBuildProjectName)'"/>
+        <Warning Code="CIQ0003" Text="`AssemblyName` [$(AssemblyName)] must match `Product.AssemblyTitle` [$(Product).$(AssemblyTitle)]." Condition="'$(AssemblyName)' != '$(Product).$(AssemblyTitle)'"/>
+        <Warning Code="CIQ0004" Text="`RootNamespace` [$(RootNamespace)] must match `AssemblyName` [$(AssemblyName)]." Condition="'$(RootNamespace)' != '$(AssemblyName)'"/>
+    </Target>
 
-    <ItemGroup>
-
-        <!-- De-comment to include GitVersionTask and Microsoft.SourceLink.GitHub dependencies.
-
-        Use when the artifact DLLs are to be versioned outside of a Docker container.
-        
-        <PackageReference Include="GitVersionTask" Version="5.0.0-beta3-4">
-            <PrivateAssets>all</PrivateAssets>
-        </PackageReference> 
-        
-
-        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-18618-05">
-            <PrivateAssets>all</PrivateAssets>
-        </PackageReference>
-
-        -->
-
-    </ItemGroup>
-
-    <ItemGroup>
-        <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
-    </ItemGroup>
+    <Target Name="ValidatePackMeta" BeforeTargets="Pack" Condition="'$(IsPackable)' == 'true'">
+        <Warning Code="CIQ1001" Text="`PackageId` [$(PackageId)] must match `AssemblyName` [$(AssemblyName)] for packable projects." Condition="'$(PackageId)' != '$(AssemblyName)'"/>
+        <Warning Code="CIQ1002" Text="`PackageVersion` [$(PackageVersion)] must match `Version` [$(Version)] for packable projects." Condition="'$(PackageVersion)' != '$(Version)'"/>
+        <Warning Code="CIQ1003" Text="`Authors` [$(Authors)] must match `Company` [$(Company)] for packable projects." Condition="'$(Authors)' != '$(Company)'"/>
+        <Warning Code="CIQ1004" Text="`Title` [$(Title)] must match `RootNamespace` [$(RootNamespace)] for packable projects." Condition="'$(Title)' != '$(RootNamespace)'"/>
+        <Warning Code="CIQ1005" Text="`Description` must be provided for packable projects." Condition="'$(Description)' == ''"/>
+        <Warning Code="CIQ1006" Text="`Copyright` must be provided for packable projects." Condition="'$(Copyright)' == ''"/>
+    </Target>
 
 </Project>

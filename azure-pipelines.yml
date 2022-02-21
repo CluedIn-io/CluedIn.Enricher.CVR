@@ -3,14 +3,9 @@ name: $(Date:yyyyMMdd)$(Rev:.r)
 trigger:
   branches:
     include:
-    - master
     - develop
-  tags:
-    include:
-      - v*
-  paths:
-    exclude:
-    - '*.md'
+    - master
+    - release/*
 
 pr:
   branches:
@@ -18,9 +13,6 @@ pr:
     - develop
     - master
     - release/*
-  paths:
-    exclude:
-    - '*.md'
 
 resources:
   repositories:
@@ -28,15 +20,25 @@ resources:
       type: github
       name: CluedIn-io/AzurePipelines.Templates
       endpoint: 'CluedIn-io'
+      ref: refs/heads/refactor
 
 pool:
   vmImage: 'windows-latest'
 
 variables:
-  Dotnet.Skip.First.Time.Experience: 'True'
-  testFolderPath: '$(Build.SourcesDirectory)/test'
+  - group: nuget
+  - name: testFolderPath
+    value: '$(Build.SourcesDirectory)/test'
+  - name: DOTNET_SKIP_FIRST_TIME_EXPERIENCE
+    value: true
+  - name: DOTNET_CLI_TELEMETRY_OPTOUT
+    value: true
+  - name: buildConfiguration
+    value: Release
 
 steps:
-- template: crawler.default.build.yml@templates
 
-- template: documentation.publish.yml@templates
+- task: NuGetAuthenticate@0
+  displayName: 'Authenticate with nuget'
+
+- template: crawler.build.yml@templates
