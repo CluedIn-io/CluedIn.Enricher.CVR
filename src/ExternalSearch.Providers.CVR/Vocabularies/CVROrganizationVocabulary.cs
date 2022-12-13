@@ -109,15 +109,6 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Vocabularies
                 this.FinancialReportSummaryPdfLink                                      = group.Add(new VocabularyKey("financialReportSummary.link",                                        VocabularyKeyDataType.Uri));
             });
 
-            this.AddMapping(this.Email,             CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.ContactEmail);
-            this.AddMapping(this.PhoneNumber,       CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.PhoneNumber);
-            this.AddMapping(this.FaxNumber,         CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.Fax);
-            this.AddMapping(this.Website,           CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.Website);
-            this.AddMapping(this.CvrNumber,         CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.CodesCVR);
-            this.AddMapping(this.NumberOfEmployees, CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.EmployeeCount);
-            this.AddMapping(this.FoundingDate,      CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.FoundingDate);
-
-            this.AddMapping(this.Address.Formatted, CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.Address);
         }
 
         public VocabularyKey CvrNumber { get; protected set; }
