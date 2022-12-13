@@ -278,7 +278,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         /// <returns>The origin entity code.</returns>
         private EntityCode GetOriginEntityCode(IExternalSearchQueryResult<CvrResult> resultItem, IExternalSearchRequest request)
         {
-            return new EntityCode(EntityType.Organization, this.GetCodeOrigin(request), resultItem.Data.CvrNumber.ToString());
+            return new EntityCode(request.EntityMetaData.EntityType, this.GetCodeOrigin(request), request.EntityMetaData.OriginEntityCode.Value);
         }
 
         /// <summary>Gets the code origin.</summary>
@@ -295,8 +295,8 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         {
             var code = this.GetOriginEntityCode(resultItem, request);
 
-            metadata.EntityType             = EntityType.Organization;
-            metadata.Name                   = resultItem.Data.Organization.Name;
+            metadata.EntityType             = request.EntityMetaData.EntityType;
+            metadata.Name                   = request.EntityMetaData.Name;
             metadata.OriginEntityCode       = code;
             metadata.ModifiedDate           = resultItem.Data.Organization.ModifiedDate;
 
