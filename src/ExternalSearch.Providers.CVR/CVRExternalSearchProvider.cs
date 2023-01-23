@@ -144,16 +144,6 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                 foreach (var value in values.Where(v => !cvrFilter(v)))
                     yield return new ExternalSearchQuery(this, entityType, ExternalSearchQueryParameter.Identifier, value);
             }
-            else if (organizationName != null)
-            {
-                var values = EnumerableExtensions.ToHashSet(organizationName.Select(NameNormalization.Normalize));
-
-                foreach (var value in values.Where(v => !nameFilter(v)))
-                {
-                    if (!namePostFixFilter(value))
-                        yield return new ExternalSearchQuery(this, entityType, ExternalSearchQueryParameter.Name, value);
-                }
-            }
         }
 
         private static HashSet<string> GetValue(IExternalSearchRequest request, IDictionary<string, object> config, string keyName, VocabularyKey defaultKey)
