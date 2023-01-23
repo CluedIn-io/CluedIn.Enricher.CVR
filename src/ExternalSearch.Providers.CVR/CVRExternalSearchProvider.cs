@@ -207,7 +207,10 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                 foreach (var result in response)
                 {
                     if (result.Organization != null)
+                    {
                         yield return new ExternalSearchQueryResult<CvrResult>(query, result);
+                        yield break;
+                            }
                     else if (result.ErrorException != null)
                         errors.Add(result.ErrorException);
                 }
