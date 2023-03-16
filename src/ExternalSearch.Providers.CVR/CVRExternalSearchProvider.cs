@@ -105,10 +105,10 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             // Query Input
             var entityType          = request.EntityMetaData.EntityType;
 
-            var cvrNumber = GetValue(request, config, Constants.KeyName.OrgNameKey, Core.Data.Vocabularies.Vocabularies.CluedInOrganization.CodesCVR);
+            var cvrNumber = GetValue(request, config, Constants.KeyName.CVRKey, Core.Data.Vocabularies.Vocabularies.CluedInOrganization.CodesCVR);
             var organizationName = GetValue(request, config, Constants.KeyName.OrgNameKey, Core.Data.Vocabularies.Vocabularies.CluedInOrganization.OrganizationName);
-            var country = GetValue(request, config, Constants.KeyName.OrgNameKey, Core.Data.Vocabularies.Vocabularies.CluedInOrganization.AddressCountryCode);
-            var website = GetValue(request, config, Constants.KeyName.OrgNameKey, Core.Data.Vocabularies.Vocabularies.CluedInOrganization.Website);
+            var country = GetValue(request, config, Constants.KeyName.CountryKey, Core.Data.Vocabularies.Vocabularies.CluedInOrganization.AddressCountryCode);
+            var website = GetValue(request, config, Constants.KeyName.WebsiteKey, Core.Data.Vocabularies.Vocabularies.CluedInOrganization.Website);
 
             if (!string.IsNullOrEmpty(request.EntityMetaData.Name))
                 organizationName.Add(request.EntityMetaData.Name);
