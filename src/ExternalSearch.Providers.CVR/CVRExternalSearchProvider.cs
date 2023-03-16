@@ -295,6 +295,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
 
             metadata.Aliases.AddRange(resultItem.Data.Organization.AlternateNames);
             metadata.Codes.Add(code);
+            metadata.Codes.Add(request.EntityMetaData.OriginEntityCode);
 
             metadata.Properties[CvrVocabulary.Organization.CompanyTypeCode]             = resultItem.Data.Organization.CompanyTypeCode.PrintIfAvailable();
             metadata.Properties[CvrVocabulary.Organization.CompanyTypeLongName]         = resultItem.Data.Organization.CompanyTypeLongName;
