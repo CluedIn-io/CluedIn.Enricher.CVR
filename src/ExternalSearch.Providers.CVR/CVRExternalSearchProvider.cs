@@ -291,7 +291,6 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             metadata.EntityType             = request.EntityMetaData.EntityType;
             metadata.Name                   = request.EntityMetaData.Name;
             metadata.OriginEntityCode       = code;
-            metadata.ModifiedDate           = resultItem.Data.Organization.ModifiedDate;
 
             metadata.Aliases.AddRange(resultItem.Data.Organization.AlternateNames);
             metadata.Codes.Add(code);
