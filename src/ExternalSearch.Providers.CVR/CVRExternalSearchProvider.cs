@@ -142,7 +142,10 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                 var values = cvrNumber;
 
                 foreach (var value in values.Where(v => !cvrFilter(v)))
-                    yield return new ExternalSearchQuery(this, entityType, ExternalSearchQueryParameter.Identifier, value);
+                {
+                    if (int.TryParse(value, out var result))
+                        yield return new ExternalSearchQuery(this, entityType, ExternalSearchQueryParameter.Identifier, result.ToString());
+                }
             }
         }
 
