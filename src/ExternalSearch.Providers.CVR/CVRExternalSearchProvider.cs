@@ -338,7 +338,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             metadata.Properties[CvrVocabulary.Organization.OtherIndustry3Description]   = resultItem.Data.Organization.OtherIndustry3.PrintIfAvailable(v => v.Description);
 
             if (resultItem.Data.Organization.Address != null)
-                PopulateAddress(metadata, CvrVocabulary.Organization.Address, resultItem.Data.Organization.Address);
+                PopulateAddress(metadata, CvrVocabulary.Address, resultItem.Data.Organization.Address);
 
             if (resultItem.Data.Organization.PostalAddress != null)
                 PopulateAddress(metadata, CvrVocabulary.Organization.PostalAddress, resultItem.Data.Organization.PostalAddress);
