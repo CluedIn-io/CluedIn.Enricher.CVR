@@ -388,6 +388,30 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             metadata.Properties[vocabulary.StreetCode]          = address.Vejkode.PrintIfAvailable();
 
             metadata.Properties[vocabulary.Formatted]           = address.ToString();
+
+            if (!string.IsNullOrWhiteSpace(address.Vejnavn))
+            {
+                var addressLine = address.Vejnavn;
+                if (!string.IsNullOrWhiteSpace(address.HusnummerFra.PrintIfAvailable()))
+                {
+                    addressLine += " " + address.HusnummerFra;
+                    if (!string.IsNullOrWhiteSpace(address.HusnummerTil.PrintIfAvailable()))
+                    {
+                        if (address.HusnummerFra != address.HusnummerFra)
+                            addressLine += $"-{address.HusnummerTil.PrintIfAvailable()}";
+                    }
+                }
+                if (!string.IsNullOrWhiteSpace(address.BogstavFra))
+                {
+                    addressLine += " " + address.BogstavFra;
+                    if (!string.IsNullOrWhiteSpace(address.BogstavTil))
+                    {
+                        if (address.BogstavFra != address.BogstavTil)
+                            addressLine += $"-{address.BogstavTil}";
+                    }
+                }
+                metadata.Properties[vocabulary.AddressLine1] = addressLine;
+            }
         }
 
         public IEnumerable<EntityType> Accepts(IDictionary<string, object> config, IProvider provider)
