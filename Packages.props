@@ -1,8 +1,8 @@
 <Project>
   <PropertyGroup Label="Dependency Versions">
-    <_ComponentHost>2.0.0</_ComponentHost>
+    <_ComponentHost>3.0.0</_ComponentHost>
     <_AutoFixture>4.11.0</_AutoFixture>
-    <_CluedIn>3.4.0-*</_CluedIn>
+    <_CluedIn>4.0.0-*</_CluedIn>
   </PropertyGroup>
   <ItemGroup>
     <!--
@@ -19,7 +19,7 @@
     <PackageReference Update="xunit.runner.visualstudio" Version="2.4.1" />
     <PackageReference Update="Moq" Version="4.13.1" />
     <PackageReference Update="Shouldly" Version="3.0.2" />
-    <PackageReference Update="CluedIn.Testing.Base" Version="$(_CluedIn)" />
+    <PackageReference Update="CluedIn.Testing.Base" Version="4.0.0-alpha.3" />
   </ItemGroup>
   <ItemGroup>
     <!--

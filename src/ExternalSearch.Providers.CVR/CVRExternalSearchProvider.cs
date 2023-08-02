@@ -1,4 +1,4 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="CVRExternalSearchProvider.cs" company="Clued In">
 //   Copyright Clued In
 // </copyright>
@@ -23,10 +23,10 @@ using CluedIn.ExternalSearch.Filters;
 using CluedIn.ExternalSearch.Providers.CVR.Client;
 using CluedIn.ExternalSearch.Providers.CVR.Model;
 using CluedIn.ExternalSearch.Providers.CVR.Model.Cvr;
+using CluedIn.ExternalSearch.Providers.CVR.Net;
 using CluedIn.ExternalSearch.Providers.CVR.Vocabularies;
 using CluedIn.Processing.EntityResolution;
 
-using DomainNameParser;
 using EntityType = CluedIn.Core.Data.EntityType;
 
 namespace CluedIn.ExternalSearch.Providers.CVR
@@ -64,8 +64,8 @@ namespace CluedIn.ExternalSearch.Providers.CVR
 
             var existingResults = request.GetQueryResults<CvrResult>(this).ToList();
 
-            var postFixes = EnumerableExtensions.ToHashSet(new[] { "A/S", "AS", "ApS", "IVS", "I/S", "IS", "K/S", "KS", "G/S", "GS", "P/S", "PS", "Enkeltmandsvirksomhed", "Forening", "Partsrederi", "Selskab", "virksomhed" }.Select(v => v.ToLowerInvariant()));
-            var contains  = EnumerableExtensions.ToHashSet(new[] { " dk", "dk ", "denmark", "danmark", "dansk", "æ", "ø", "å" }.Select(v => v.ToLowerInvariant()));
+            var postFixes = Enumerable.ToHashSet(new[] { "A/S", "AS", "ApS", "IVS", "I/S", "IS", "K/S", "KS", "G/S", "GS", "P/S", "PS", "Enkeltmandsvirksomhed", "Forening", "Partsrederi", "Selskab", "virksomhed" }.Select(v => v.ToLowerInvariant()));
+            var contains  = Enumerable.ToHashSet(new[] { " dk", "dk ", "denmark", "danmark", "dansk", "æ", "ø", "å" }.Select(v => v.ToLowerInvariant()));
 
             Func<string, bool> cvrFilter            = value => existingResults.Any(r => string.Equals(r.Data.CvrNumber.ToString(CultureInfo.InvariantCulture), value, StringComparison.InvariantCultureIgnoreCase));
             Func<string, bool> nameFilter           = value => OrganizationFilters.NameFilter(context, value);
@@ -94,7 +94,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             // Query Input
             var entityType          = request.EntityMetaData.EntityType;
             var cvrNumber           = request.QueryParameters.GetValue(CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.CodesCVR, null);
-            var organizationName    = EnumerableExtensions.ToHashSet(request.QueryParameters.GetValue(CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.OrganizationName, new HashSet<string>()));
+            var organizationName    = Enumerable.ToHashSet(request.QueryParameters.GetValue(CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.OrganizationName, new HashSet<string>()));
             var country             = request.QueryParameters.GetValue(CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.AddressCountryCode, null);
             var website             = request.QueryParameters.GetValue(CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.Website, null);
 
@@ -116,8 +116,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
 
                 if (hosts.Any(h =>
                     {
-                        DomainName domain;
-                        if (!DomainName.TryParse(h, out domain))
+                        if (!DomainName.TryParse(h, out var domain))
                             return false;
 
                         return string.Equals(domain.TLD, "dk", StringComparison.InvariantCultureIgnoreCase);
@@ -134,7 +133,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             }
             else if (organizationName != null)
             {
-                var values = EnumerableExtensions.ToHashSet(organizationName.Select(NameNormalization.Normalize));
+                var values = Enumerable.ToHashSet(organizationName.Select(NameNormalization.Normalize));
 
                 foreach (var value in values.Where(v => !nameFilter(v)))
                 {
