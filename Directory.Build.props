@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup Label="Compilation Metadata">
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
 
   <!-- TODO: Clean up warnings -->
@@ -34,6 +34,10 @@
     <!-- <PackageRequireLicenseAcceptance> should be set to true if a license is included -->
     <PackageProjectUrl>http://cluedin.com</PackageProjectUrl>
     <PackageIcon>nugetlogo.png</PackageIcon>
+  </PropertyGroup>
+
+  <PropertyGroup Label="FixBuildDefault">
+	  <IncludeProjectsNotInAssetsFileInDepsFile>false</IncludeProjectsNotInAssetsFileInDepsFile>
   </PropertyGroup>
 
   <ItemGroup Label="Package Includes">

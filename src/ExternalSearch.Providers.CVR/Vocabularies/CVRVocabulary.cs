@@ -18,10 +18,12 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Vocabularies
         static CvrVocabulary()
         {
             Organization    = new CvrOrganizationVocabulary();
+            Address         = new CvrAddressVocabulary();
         }
 
         /// <summary>Gets the organization.</summary>
         /// <value>The organization.</value>
         public static CvrOrganizationVocabulary Organization { get; private set; }
+        public static CvrAddressVocabulary Address { get; private set; }
     }
 }
