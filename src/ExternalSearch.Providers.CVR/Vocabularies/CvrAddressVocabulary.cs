@@ -45,6 +45,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Vocabularies
             this.PostalCode         = this.Add(new VocabularyKey("postalCode"));
             this.StreetCode         = this.Add(new VocabularyKey("streetCode"));
             this.Formatted          = this.Add(new VocabularyKey("formatted"));
+            this.AddressLine1          = this.Add(new VocabularyKey("addressLine1"));
         }
 
         public VocabularyKey AddressId { get; protected set; }
@@ -66,6 +67,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Vocabularies
         public VocabularyKey PostalCode { get; protected set; }
         public VocabularyKey StreetCode { get; protected set; }
         public VocabularyKey Formatted { get; protected set; }
+        public VocabularyKey AddressLine1 { get; protected set; }
 
     }
 }
