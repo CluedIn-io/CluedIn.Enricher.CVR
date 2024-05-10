@@ -201,6 +201,9 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                 if (response == null)
                     yield break;
 
+                if (response.Count() != 1)
+                    yield break;
+
                 foreach (var result in response)
                 {
                     if (result.Organization != null)
