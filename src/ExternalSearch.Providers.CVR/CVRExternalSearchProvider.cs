@@ -130,7 +130,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                     namePostFixFilter = value => false;
             }
 
-            if (cvrNumber != null)
+            if (cvrNumber.Any())
             {
                 var values = cvrNumber;
 
