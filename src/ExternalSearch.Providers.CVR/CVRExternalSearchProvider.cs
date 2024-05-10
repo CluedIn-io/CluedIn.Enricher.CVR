@@ -106,6 +106,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             var entityType          = request.EntityMetaData.EntityType;
 
             var cvrNumber = GetValue(request, config, Constants.KeyName.CVRKey, Core.Data.Vocabularies.Vocabularies.CluedInOrganization.CodesCVR);
+            var organizationName = GetValue(request, config, Constants.KeyName.OrgNameKey, Core.Data.Vocabularies.Vocabularies.CluedInOrganization.OrganizationName);
             var country = GetValue(request, config, Constants.KeyName.CountryKey, Core.Data.Vocabularies.Vocabularies.CluedInOrganization.AddressCountryCode);
             var website = GetValue(request, config, Constants.KeyName.WebsiteKey, Core.Data.Vocabularies.Vocabularies.CluedInOrganization.Website);
 
@@ -140,14 +141,14 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                         yield return new ExternalSearchQuery(this, entityType, ExternalSearchQueryParameter.Identifier, result.ToString());
                 }
             }
-
-            if (config.ContainsKey(Constants.KeyName.OrgNameKey))
+            else if (organizationName != null)
             {
-                var organizationName = GetValue(request, config, Constants.KeyName.OrgNameKey, Core.Data.Vocabularies.Vocabularies.CluedInOrganization.OrganizationName);
+                var values = Enumerable.ToHashSet(organizationName.Select(NameNormalization.Normalize));
 
-                foreach (var name in organizationName)
+                foreach (var value in values.Where(v => !nameFilter(v)))
                 {
-                    yield return new ExternalSearchQuery(this, entityType, ExternalSearchQueryParameter.Name, name);
+                    if (!namePostFixFilter(value))
+                        yield return new ExternalSearchQuery(this, entityType, ExternalSearchQueryParameter.Name, value);
                 }
             }
         }
