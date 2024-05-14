@@ -63,6 +63,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         }
         private IEnumerable<IExternalSearchQuery> InternalBuildQueries(ExecutionContext context, IExternalSearchRequest request, IDictionary<string, object> config = null)
         {
+            var jobData = new CvrExternalSearchJobData(config);
             if (config.TryGetValue(Constants.KeyName.AcceptedEntityType, out var customType) && !string.IsNullOrWhiteSpace(customType?.ToString()))
             {
                 if (!request.EntityMetaData.EntityType.Is(customType.ToString()))
@@ -143,12 +144,11 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             }
             else if (organizationName != null)
             {
-                var values = Enumerable.ToHashSet(organizationName.Select(NameNormalization.Normalize));
+                var values = jobData.OrgNameNormalization ? Enumerable.ToHashSet(organizationName.Select(NameNormalization.Normalize)).Where(v => !nameFilter(v) && !namePostFixFilter(v)) : organizationName;
 
-                foreach (var value in values.Where(v => !nameFilter(v)))
+                foreach (var value in values)
                 {
-                    if (!namePostFixFilter(value))
-                        yield return new ExternalSearchQuery(this, entityType, ExternalSearchQueryParameter.Name, value);
+                    yield return new ExternalSearchQuery(this, entityType, ExternalSearchQueryParameter.Name, value);
                 }
             }
         }
