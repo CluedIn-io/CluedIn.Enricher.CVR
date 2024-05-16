@@ -63,6 +63,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         }
         private IEnumerable<IExternalSearchQuery> InternalBuildQueries(ExecutionContext context, IExternalSearchRequest request, IDictionary<string, object> config = null)
         {
+            var jobData = new CvrExternalSearchJobData(config);
             if (config.TryGetValue(Constants.KeyName.AcceptedEntityType, out var customType) && !string.IsNullOrWhiteSpace(customType?.ToString()))
             {
                 if (!request.EntityMetaData.EntityType.Is(customType.ToString()))
@@ -110,11 +111,6 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             var country = GetValue(request, config, Constants.KeyName.CountryKey, Core.Data.Vocabularies.Vocabularies.CluedInOrganization.AddressCountryCode);
             var website = GetValue(request, config, Constants.KeyName.WebsiteKey, Core.Data.Vocabularies.Vocabularies.CluedInOrganization.Website);
 
-            if (!string.IsNullOrEmpty(request.EntityMetaData.Name))
-                organizationName.Add(request.EntityMetaData.Name);
-            if (!string.IsNullOrEmpty(request.EntityMetaData.DisplayName))
-                organizationName.Add(request.EntityMetaData.DisplayName);
-
             if (country != null)
             {
                 if (country.Any(v => string.Equals(v, "dk", StringComparison.InvariantCultureIgnoreCase) || 
@@ -136,7 +132,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                     namePostFixFilter = value => false;
             }
 
-            if (cvrNumber != null)
+            if (cvrNumber.Any())
             {
                 var values = cvrNumber;
 
@@ -144,6 +140,15 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                 {
                     if (int.TryParse(value, out var result))
                         yield return new ExternalSearchQuery(this, entityType, ExternalSearchQueryParameter.Identifier, result.ToString());
+                }
+            }
+            else if (organizationName != null)
+            {
+                var values = jobData.OrgNameNormalization ? Enumerable.ToHashSet(organizationName.Select(NameNormalization.Normalize)).Where(v => !nameFilter(v) && !namePostFixFilter(v)) : organizationName;
+
+                foreach (var value in values)
+                {
+                    yield return new ExternalSearchQuery(this, entityType, ExternalSearchQueryParameter.Name, value);
                 }
             }
         }
@@ -194,6 +199,9 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                 var response = client.GetCvrResultsByName(name);
            
                 if (response == null)
+                    yield break;
+
+                if (response.Count() != 1)
                     yield break;
 
                 foreach (var result in response)

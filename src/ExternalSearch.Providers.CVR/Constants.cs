@@ -15,6 +15,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         {
             public const string AcceptedEntityType = "acceptedEntityType";
             public const string OrgNameKey = "orgNameKey";
+            public const string OrgNameNormalization = "orgNameNormalization";
             public const string CVRKey = "cvrKey";
             public const string CountryKey = "countryKey";
             public const string WebsiteKey = "websiteKey";
@@ -41,6 +42,13 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                     type = "input",
                     isRequired = false,
                     name = KeyName.OrgNameKey
+                },
+                new Control()
+                {
+                    displayName = "Organization Name normalization",
+                    type = "checkbox",
+                    isRequired = false,
+                    name = KeyName.OrgNameNormalization,
                 },
                 new Control()
                 {
