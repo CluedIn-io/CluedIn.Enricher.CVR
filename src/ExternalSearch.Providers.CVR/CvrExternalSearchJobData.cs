@@ -11,6 +11,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         {
             AcceptedEntityType = GetValue<string>(configuration, Constants.KeyName.AcceptedEntityType);
             OrgNameKey = GetValue<string>(configuration, Constants.KeyName.OrgNameKey);
+            OrgNameNormalization = GetValue<bool>(configuration, Constants.KeyName.OrgNameNormalization);
             CVRKey = GetValue<string>(configuration, Constants.KeyName.CVRKey);
             CountryKey = GetValue<string>(configuration, Constants.KeyName.CountryKey);
             WebsiteKey = GetValue<string>(configuration, Constants.KeyName.WebsiteKey);
@@ -21,12 +22,14 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             return new Dictionary<string, object>() { 
                 { Constants.KeyName.AcceptedEntityType, AcceptedEntityType },
                 { Constants.KeyName.OrgNameKey, OrgNameKey },
+                { Constants.KeyName.OrgNameNormalization, OrgNameNormalization },
                 { Constants.KeyName.CVRKey, CVRKey },
                 { Constants.KeyName.CountryKey, CountryKey },
                 { Constants.KeyName.WebsiteKey, WebsiteKey },};
         }
         public string AcceptedEntityType { get; set; }
         public string OrgNameKey { get; set; }
+        public bool OrgNameNormalization { get; set; }
         public string CVRKey { get; set; }
         public string CountryKey { get; set; }
         public string WebsiteKey { get; set; }
