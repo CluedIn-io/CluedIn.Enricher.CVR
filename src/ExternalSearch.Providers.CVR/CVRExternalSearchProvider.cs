@@ -36,7 +36,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
     /// <seealso cref="CluedIn.ExternalSearch.ExternalSearchProviderBase" />
     public class CvrExternalSearchProvider : ExternalSearchProviderBase, IExtendedEnricherMetadata, IConfigurableExternalSearchProvider
     {
-        private static readonly EntityType[] AcceptedEntityTypes = { EntityType.Organization };
+        private static readonly EntityType[] AcceptedEntityTypes = new EntityType[0];
 
         /**********************************************************************************************************
          * CONSTRUCTORS
