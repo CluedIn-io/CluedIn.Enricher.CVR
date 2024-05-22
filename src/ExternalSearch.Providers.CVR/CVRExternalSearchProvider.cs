@@ -423,7 +423,10 @@ namespace CluedIn.ExternalSearch.Providers.CVR
 
         public IEnumerable<EntityType> Accepts(IDictionary<string, object> config, IProvider provider)
         {
-            return AcceptedEntityTypes;
+            if (config.TryGetValue(Constants.KeyName.AcceptedEntityType, out var customType) && customType is EntityType entityType)
+            {
+                yield return entityType;
+            }
         }
 
         public IEnumerable<IExternalSearchQuery> BuildQueries(ExecutionContext context, IExternalSearchRequest request, IDictionary<string, object> config, IProvider provider)
