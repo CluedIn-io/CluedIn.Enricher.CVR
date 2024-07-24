@@ -36,7 +36,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
     /// <seealso cref="CluedIn.ExternalSearch.ExternalSearchProviderBase" />
     public class CvrExternalSearchProvider : ExternalSearchProviderBase, IExtendedEnricherMetadata, IConfigurableExternalSearchProvider
     {
-        private static readonly EntityType[] AcceptedEntityTypes = new EntityType[0];
+        private static readonly EntityType[] DefaultAcceptedEntityTypes = { };
 
         /**********************************************************************************************************
          * CONSTRUCTORS
@@ -46,7 +46,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         /// Initializes a new instance of the <see cref="CvrExternalSearchProvider" /> class.
         /// </summary>
         public CvrExternalSearchProvider()
-            : base(Constants.ProviderId, AcceptedEntityTypes)
+            : base(Constants.ProviderId, DefaultAcceptedEntityTypes)
         {
         }
 
@@ -54,25 +54,22 @@ namespace CluedIn.ExternalSearch.Providers.CVR
          * METHODS
          **********************************************************************************************************/
 
-        public override IEnumerable<IExternalSearchQuery> BuildQueries(ExecutionContext context, IExternalSearchRequest request)
-        {
-            foreach (var externalSearchQuery in InternalBuildQueries(context, request))
-            {
-                yield return externalSearchQuery;
-            }
-        }
+        public override IEnumerable<IExternalSearchQueryResult> ExecuteSearch(ExecutionContext context, IExternalSearchQuery query) => throw new NotSupportedException();
+
+        public override IEnumerable<Clue> BuildClues(ExecutionContext context, IExternalSearchQuery query, IExternalSearchQueryResult result, IExternalSearchRequest request) => throw new NotSupportedException();
+
+        public override IEntityMetadata GetPrimaryEntityMetadata(ExecutionContext context, IExternalSearchQueryResult result, IExternalSearchRequest request) => throw new NotSupportedException();
+
+        public override IPreviewImage GetPrimaryEntityPreviewImage(ExecutionContext context, IExternalSearchQueryResult result, IExternalSearchRequest request) => throw new NotSupportedException();
+
+        public override IEnumerable<IExternalSearchQuery> BuildQueries(ExecutionContext context, IExternalSearchRequest request) => throw new NotSupportedException();
+
         private IEnumerable<IExternalSearchQuery> InternalBuildQueries(ExecutionContext context, IExternalSearchRequest request, IDictionary<string, object> config = null)
         {
-            var jobData = new CvrExternalSearchJobData(config);
-            if (config.TryGetValue(Constants.KeyName.AcceptedEntityType, out var customType) && !string.IsNullOrWhiteSpace(customType?.ToString()))
-            {
-                if (!request.EntityMetaData.EntityType.Is(customType.ToString()))
-                {
-                    yield break;
-                }
-            }
-            else if (!this.Accepts(request.EntityMetaData.EntityType))
+            if (!Accepts(config, request.EntityMetaData.EntityType))
                 yield break;
+            
+            var jobData = new CvrExternalSearchJobData(config);
 
             var existingResults = request.GetQueryResults<CvrResult>(this).ToList();
 
@@ -166,102 +163,6 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             }
 
             return value;
-        }
-
-        /// <summary>Executes the search.</summary>
-        /// <param name="context">The context.</param>
-        /// <param name="query">The query.</param>
-        /// <returns>The results.</returns>
-        public override IEnumerable<IExternalSearchQueryResult> ExecuteSearch(ExecutionContext context, IExternalSearchQuery query)
-        {
-            var identifier  = query.QueryParameters.GetValue<string, HashSet<string>>(ExternalSearchQueryParameter.Identifier.ToString(), new HashSet<string>()).FirstOrDefault();
-            var name        = query.QueryParameters.GetValue<string, HashSet<string>>(ExternalSearchQueryParameter.Name.ToString(), new HashSet<string>()).FirstOrDefault();
-
-            var client = new CvrClient();
-
-            if (!string.IsNullOrEmpty(identifier))
-            {
-                var response = client.GetCvrResult(int.Parse(identifier));
-           
-                if (response == null)
-                    yield break;
-                else if (response.Organization != null)
-                    yield return new ExternalSearchQueryResult<CvrResult>(query, response);
-                else if (response.ErrorException != null)
-                    throw new AggregateException(response.ErrorException.Message, response.ErrorException);
-                else
-                    throw new ApplicationException("Could not execute external search query");
-            }
-            else if (!string.IsNullOrEmpty(name))
-            {
-                var errors = new List<Exception>();
-
-                var response = client.GetCvrResultsByName(name);
-           
-                if (response == null)
-                    yield break;
-
-                if (response.Count() != 1)
-                    yield break;
-
-                foreach (var result in response)
-                {
-                    if (result.Organization != null)
-                    {
-                        yield return new ExternalSearchQueryResult<CvrResult>(query, result);
-                        yield break;
-                            }
-                    else if (result.ErrorException != null)
-                        errors.Add(result.ErrorException);
-                }
-
-                if (errors.Any())
-                    throw new AggregateException("Could not execute external search query", errors);
-            }
-            else
-                yield break;
-        }
-
-        /// <summary>Builds the clues.</summary>
-        /// <param name="context">The context.</param>
-        /// <param name="query">The query.</param>
-        /// <param name="result">The result.</param>
-        /// <param name="request">The request.</param>
-        /// <returns>The clues.</returns>
-        public override IEnumerable<Clue> BuildClues(ExecutionContext context, IExternalSearchQuery query, IExternalSearchQueryResult result, IExternalSearchRequest request)
-        {
-            var resultItem = result.As<CvrResult>();
-
-            var code = this.GetOriginEntityCode(resultItem, request);
-
-            var clue = new Clue(code, context.Organization);
-            clue.Data.OriginProviderDefinitionId = this.Id;
-
-            this.PopulateMetadata(clue.Data.EntityData, resultItem, request);
-
-            return new[] { clue };
-        }
-
-        /// <summary>Gets the primary entity metadata.</summary>
-        /// <param name="context">The context.</param>
-        /// <param name="result">The result.</param>
-        /// <param name="request">The request.</param>
-        /// <returns>The primary entity metadata.</returns>
-        public override IEntityMetadata GetPrimaryEntityMetadata(ExecutionContext context, IExternalSearchQueryResult result, IExternalSearchRequest request)
-        {
-            var resultItem = result.As<CvrResult>();
-            return this.CreateMetadata(resultItem, request);
-        }
-
-
-        /// <summary>Gets the preview image.</summary>
-        /// <param name="context">The context.</param>
-        /// <param name="result">The result.</param>
-        /// <param name="request">The request.</param>
-        /// <returns>The preview image.</returns>
-        public override IPreviewImage GetPrimaryEntityPreviewImage(ExecutionContext context, IExternalSearchQueryResult result, IExternalSearchRequest request)
-        {
-            return null;
         }
 
         /// <summary>Creates the metadata.</summary>
@@ -421,12 +322,24 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             }
         }
 
-        public IEnumerable<EntityType> Accepts(IDictionary<string, object> config, IProvider provider)
+        public IEnumerable<EntityType> Accepts(IDictionary<string, object> config, IProvider provider) => this.Accepts(config);
+
+        private IEnumerable<EntityType> Accepts(IDictionary<string, object> config)
         {
-            if (config.TryGetValue(Constants.KeyName.AcceptedEntityType, out var customType) && customType is EntityType entityType)
+            if (config.TryGetValue(Constants.KeyName.AcceptedEntityType, out var acceptedEntityTypeObj) && acceptedEntityTypeObj is string acceptedEntityType && !string.IsNullOrWhiteSpace(acceptedEntityType))
             {
-                yield return entityType;
+                return new EntityType[] { acceptedEntityType };
             }
+
+            // Fallback to default accepted entity types
+            return DefaultAcceptedEntityTypes;
+        }
+
+        private bool Accepts(IDictionary<string, object> config, EntityType entityTypeToEvaluate)
+        {
+            var configurableAcceptedEntityTypes = this.Accepts(config).ToArray();
+
+            return configurableAcceptedEntityTypes.Any(entityTypeToEvaluate.Is);
         }
 
         public IEnumerable<IExternalSearchQuery> BuildQueries(ExecutionContext context, IExternalSearchRequest request, IDictionary<string, object> config, IProvider provider)
@@ -436,22 +349,77 @@ namespace CluedIn.ExternalSearch.Providers.CVR
 
         public IEnumerable<IExternalSearchQueryResult> ExecuteSearch(ExecutionContext context, IExternalSearchQuery query, IDictionary<string, object> config, IProvider provider)
         {
-            return ExecuteSearch(context, query);
+            var identifier = query.QueryParameters.GetValue<string, HashSet<string>>(ExternalSearchQueryParameter.Identifier.ToString(), new HashSet<string>()).FirstOrDefault();
+            var name = query.QueryParameters.GetValue<string, HashSet<string>>(ExternalSearchQueryParameter.Name.ToString(), new HashSet<string>()).FirstOrDefault();
+
+            var client = new CvrClient();
+
+            if (!string.IsNullOrEmpty(identifier))
+            {
+                var response = client.GetCvrResult(int.Parse(identifier));
+
+                if (response == null)
+                    yield break;
+                else if (response.Organization != null)
+                    yield return new ExternalSearchQueryResult<CvrResult>(query, response);
+                else if (response.ErrorException != null)
+                    throw new AggregateException(response.ErrorException.Message, response.ErrorException);
+                else
+                    throw new ApplicationException("Could not execute external search query");
+            }
+            else if (!string.IsNullOrEmpty(name))
+            {
+                var errors = new List<Exception>();
+
+                var response = client.GetCvrResultsByName(name);
+
+                if (response == null)
+                    yield break;
+
+                if (response.Count() != 1)
+                    yield break;
+
+                foreach (var result in response)
+                {
+                    if (result.Organization != null)
+                    {
+                        yield return new ExternalSearchQueryResult<CvrResult>(query, result);
+                        yield break;
+                    }
+                    else if (result.ErrorException != null)
+                        errors.Add(result.ErrorException);
+                }
+
+                if (errors.Any())
+                    throw new AggregateException("Could not execute external search query", errors);
+            }
+            else
+                yield break;
         }
 
         public IEnumerable<Clue> BuildClues(ExecutionContext context, IExternalSearchQuery query, IExternalSearchQueryResult result, IExternalSearchRequest request, IDictionary<string, object> config, IProvider provider)
         {
-            return BuildClues(context, query, result, request);
+            var resultItem = result.As<CvrResult>();
+
+            var code = this.GetOriginEntityCode(resultItem, request);
+
+            var clue = new Clue(code, context.Organization);
+            clue.Data.OriginProviderDefinitionId = this.Id;
+
+            this.PopulateMetadata(clue.Data.EntityData, resultItem, request);
+
+            return new[] { clue };
         }
 
         public IEntityMetadata GetPrimaryEntityMetadata(ExecutionContext context, IExternalSearchQueryResult result, IExternalSearchRequest request, IDictionary<string, object> config, IProvider provider)
         {
-            return GetPrimaryEntityMetadata(context, result, request);
+            var resultItem = result.As<CvrResult>();
+            return this.CreateMetadata(resultItem, request);
         }
 
         public IPreviewImage GetPrimaryEntityPreviewImage(ExecutionContext context, IExternalSearchQueryResult result, IExternalSearchRequest request, IDictionary<string, object> config, IProvider provider)
         {
-            return GetPrimaryEntityPreviewImage(context, result, request);
+            return null;
         }
 
 
