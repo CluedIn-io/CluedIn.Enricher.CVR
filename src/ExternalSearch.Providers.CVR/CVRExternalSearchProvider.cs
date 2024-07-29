@@ -349,6 +349,8 @@ namespace CluedIn.ExternalSearch.Providers.CVR
 
         public IEnumerable<IExternalSearchQueryResult> ExecuteSearch(ExecutionContext context, IExternalSearchQuery query, IDictionary<string, object> config, IProvider provider)
         {
+            var cvrExternalSearchJobData = new CvrExternalSearchJobData(config);
+
             var identifier = query.QueryParameters.GetValue<string, HashSet<string>>(ExternalSearchQueryParameter.Identifier.ToString(), new HashSet<string>()).FirstOrDefault();
             var name = query.QueryParameters.GetValue<string, HashSet<string>>(ExternalSearchQueryParameter.Name.ToString(), new HashSet<string>()).FirstOrDefault();
 
@@ -371,7 +373,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             {
                 var errors = new List<Exception>();
 
-                var response = client.GetCvrResultsByName(name);
+                var response = client.GetCvrResultsByName(name, cvrExternalSearchJobData.OrgMatchPastNames);
 
                 if (response == null)
                     yield break;

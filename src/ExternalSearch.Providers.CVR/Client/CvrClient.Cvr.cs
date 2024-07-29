@@ -23,9 +23,9 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
             return CallCvr(uri => this.GetCompanyByCvrNumber(cvrNumber, uri));
         }
 
-        public IEnumerable<Result<CvrOrganization>> GetCompanyByName(string name)
+        public IEnumerable<Result<CvrOrganization>> GetCompanyByName(string name, bool matchPastNames)
         {
-            return CallCvr(uri => this.GetCompanyByName(name, uri));
+            return CallCvr(uri => this.GetCompanyByName(name, uri, matchPastNames));
         }
 
         private T CallCvr<T>(Func<Uri, T> searchFunc)
@@ -77,7 +77,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
             return GetCompany(body, endPoint);
         }
 
-        public IEnumerable<Result<CvrOrganization>> GetCompanyByName(string name, Uri endPoint)
+        public IEnumerable<Result<CvrOrganization>> GetCompanyByName(string name, Uri endPoint, bool matchPastNames)
         {
             var body =
                  JsonUtility.Serialize(new Body() {
@@ -86,7 +86,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
                      Query = new Query() {
                          QueryString = new QueryString() {
                              Query = JsonConvert.ToString(name),
-                             Fields = new List<string>() { "Vrvirksomhed.virksomhedMetadata.nyesteNavn.navn" }
+                             Fields = new List<string>() { matchPastNames ? "Vrvirksomhed.navne.navn" : "Vrvirksomhed.virksomhedMetadata.nyesteNavn.navn" }
                          }
                      }
                  });
