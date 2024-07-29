@@ -33,9 +33,9 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
             return result;
         }
 
-        public IEnumerable<CvrResult> GetCvrResultsByName(string name)
+        public IEnumerable<CvrResult> GetCvrResultsByName(string name, bool matchPastNames)
         {
-            var organizations = ActionExtensions.ExecuteWithRetry(() => this.GetCompanyByName(name), isTransient: ex => ex.IsTransient());
+            var organizations = ActionExtensions.ExecuteWithRetry(() => this.GetCompanyByName(name, matchPastNames), isTransient: ex => ex.IsTransient());
 
             if (organizations == null)
                 yield break;
