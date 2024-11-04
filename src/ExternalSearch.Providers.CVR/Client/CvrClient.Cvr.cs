@@ -69,7 +69,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
                     Query = new Query() {
                         QueryString = new QueryString() {
                             Query = cvrNumber,
-                            Fields = ["Vrvirksomhed.cvrNummer"]
+                            Fields = new List<string>() { "Vrvirksomhed.cvrNummer" }
                         }
                     }
                 });
@@ -86,7 +86,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
                      Query = new Query() {
                          QueryString = new QueryString() {
                              Query = JsonConvert.ToString(name),
-                             Fields = [matchPastNames ? "Vrvirksomhed.navne.navn" : "Vrvirksomhed.virksomhedMetadata.nyesteNavn.navn"]
+                             Fields = new List<string>() { matchPastNames ? "Vrvirksomhed.navne.navn" : "Vrvirksomhed.virksomhedMetadata.nyesteNavn.navn" }
                          }
                      }
                  });
