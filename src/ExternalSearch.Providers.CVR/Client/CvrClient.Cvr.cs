@@ -91,7 +91,6 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
                      }
                  });
 
-            return GetCompanies(body, endPoint);
             return GetCompanies(body, endPoint, name, matchPastNames);
         }
 
