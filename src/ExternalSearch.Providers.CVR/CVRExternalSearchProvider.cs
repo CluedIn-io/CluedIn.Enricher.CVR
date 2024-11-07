@@ -177,35 +177,16 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             return metadata;
         }
 
-        /// <summary>Gets the origin entity code.</summary>
-        /// <param name="resultItem">The result item.</param>
-        /// <returns>The origin entity code.</returns>
-        private EntityCode GetOriginEntityCode(IExternalSearchQueryResult<CvrResult> resultItem, IExternalSearchRequest request)
-        {
-            return new EntityCode(request.EntityMetaData.EntityType, this.GetCodeOrigin(request), request.EntityMetaData.OriginEntityCode.Value);
-        }
-
-        /// <summary>Gets the code origin.</summary>
-        /// <returns>The code origin</returns>
-        private CodeOrigin GetCodeOrigin(IExternalSearchRequest request)
-        {
-            return CodeOrigin.CluedIn.CreateSpecific("CVR");
-        }
-
         /// <summary>Populates the metadata.</summary>
         /// <param name="metadata">The metadata.</param>
         /// <param name="resultItem">The result item.</param>
         private void PopulateMetadata(IEntityMetadata metadata, IExternalSearchQueryResult<CvrResult> resultItem, IExternalSearchRequest request)
         {
-            var code = this.GetOriginEntityCode(resultItem, request);
-
             metadata.EntityType             = request.EntityMetaData.EntityType;
             metadata.Name                   = request.EntityMetaData.Name;
-            metadata.OriginEntityCode       = code;
+            metadata.OriginEntityCode       = request.EntityMetaData.OriginEntityCode;
 
             metadata.Aliases.AddRange(resultItem.Data.Organization.AlternateNames);
-            metadata.Codes.Add(code);
-            metadata.Codes.Add(request.EntityMetaData.OriginEntityCode);
 
             metadata.Properties[CvrVocabulary.Organization.CompanyTypeCode]             = resultItem.Data.Organization.CompanyTypeCode.PrintIfAvailable();
             metadata.Properties[CvrVocabulary.Organization.CompanyTypeLongName]         = resultItem.Data.Organization.CompanyTypeLongName;
@@ -403,9 +384,8 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         {
             var resultItem = result.As<CvrResult>();
 
-            var code = this.GetOriginEntityCode(resultItem, request);
 
-            var clue = new Clue(code, context.Organization);
+            var clue = new Clue(request.EntityMetaData.OriginEntityCode, context.Organization);
             clue.Data.OriginProviderDefinitionId = this.Id;
 
             this.PopulateMetadata(clue.Data.EntityData, resultItem, request);

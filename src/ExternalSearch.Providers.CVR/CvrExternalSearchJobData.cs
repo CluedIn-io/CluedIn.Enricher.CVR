@@ -27,7 +27,8 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                 { Constants.KeyName.OrgMatchPastNames, OrgMatchPastNames },
                 { Constants.KeyName.CVRKey, CVRKey },
                 { Constants.KeyName.CountryKey, CountryKey },
-                { Constants.KeyName.WebsiteKey, WebsiteKey },};
+                { Constants.KeyName.WebsiteKey, WebsiteKey },
+            };
         }
         public string AcceptedEntityType { get; set; }
         public string OrgNameKey { get; set; }
