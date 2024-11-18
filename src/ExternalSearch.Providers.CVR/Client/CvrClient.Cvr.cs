@@ -74,7 +74,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
                     }
                 });
 
-            return GetCompany(body, endPoint);
+            return GetCompany(body, endPoint, string.Empty, false);
         }
 
         public IEnumerable<Result<CvrOrganization>> GetCompanyByName(string name, Uri endPoint, bool matchPastNames)
@@ -91,15 +91,15 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
                      }
                  });
 
-            return GetCompanies(body, endPoint);
+            return GetCompanies(body, endPoint, name, matchPastNames);
         }
 
-        private Result<CvrOrganization> GetCompany(string queryBody, Uri endPoint)
+        private Result<CvrOrganization> GetCompany(string queryBody, Uri endPoint, string name, bool matchPastNames)
         {
             return this.GetCompanyResult(
                 queryBody, 
                 endPoint,
-                (hits, response, json) =>
+                (hits, response, json, name, matchPastNames) =>
                     {
                         var hit = hits.FirstOrDefault();
 
@@ -112,31 +112,40 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
                             result.RawContent = response.Content;
 
                         return result;
-                    }
+                    },
+                name,
+                matchPastNames
             );
         }
 
-        private IEnumerable<Result<CvrOrganization>> GetCompanies(string queryBody, Uri endPoint)
+        private IEnumerable<Result<CvrOrganization>> GetCompanies(string queryBody, Uri endPoint, string name, bool matchPastNames)
         {
             return this.GetCompanyResult(
                 queryBody, 
                 endPoint,
-                this.BuildHits
+                this.BuildHits,
+                name,
+                matchPastNames
             );
         }
 
-        private IEnumerable<Result<CvrOrganization>> BuildHits(IEnumerable<Hit> hits, IRestResponse<CompanyResult> response, JObject json)
+        private IEnumerable<Result<CvrOrganization>> BuildHits(IEnumerable<Hit> hits, IRestResponse<CompanyResult> response, JObject json, string name, bool matchPastNames)
         {
-            foreach (var hit in hits)
-            {
-                if (hit == null)
-                    continue;
+            if (hits == null || string.IsNullOrEmpty(name)) yield break;
 
-                yield return this.CreateCompanyResult(hit, response, json);
+            Hit hit;
+            if (matchPastNames)
+            {
+                hit = hits.FirstOrDefault(e => e._source.Vrvirksomhed.navne.Any(navne => navne.Navn.Equals(name, StringComparison.InvariantCultureIgnoreCase)));
+            } else
+            {
+                hit = hits.FirstOrDefault(e => e._source.Vrvirksomhed.virksomhedMetadata.NyesteNavn.Navn.Equals(name, StringComparison.InvariantCultureIgnoreCase));
             }
+            
+            yield return this.CreateCompanyResult(hit, response, json);
         }
 
-        private T GetCompanyResult<T>(string queryBody, Uri endPoint, Func<IEnumerable<Hit>, IRestResponse<CompanyResult>, JObject, T> resultFunc)
+        private T GetCompanyResult<T>(string queryBody, Uri endPoint, Func<IEnumerable<Hit>, IRestResponse<CompanyResult>, JObject, string, bool, T> resultFunc, string name, bool matchPastNames)
         {
             var client = new RestClient(endPoint);
 
@@ -160,7 +169,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
             {
                 var json = JObject.Parse(response.Content);
 
-                return resultFunc(response.Data.hits.hits, response, json);
+                return resultFunc(response.Data.hits.hits, response, json, name, matchPastNames);
             }
             else if (response.StatusCode == HttpStatusCode.NotFound)
                 return default(T);
