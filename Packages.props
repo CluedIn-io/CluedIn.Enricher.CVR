@@ -28,7 +28,7 @@
     -->
     <PackageReference Update="ComponentHost" Version="$(_ComponentHost)" />
     <PackageReference Update="CluedIn.Crawling" Version="$(_CluedIn)" />
-    <PackageReference Update="CluedIn.CrawlerIntegrationTesting" Version="$(_CluedIn)" />
+    <PackageReference Update="CluedIn.CrawlerIntegrationTesting" Version="4.0.0" />
     <PackageReference Update="CluedIn.Core" Version="$(_CluedIn)" />
     <PackageReference Update="CluedIn.Core.Agent" Version="$(_CluedIn)" />
     <PackageReference Update="CluedIn.Server" Version="$(_CluedIn)" />
