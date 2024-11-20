@@ -28,56 +28,63 @@ namespace CluedIn.ExternalSearch.Providers.CVR
 
         public static AuthMethods AuthMethods { get; set; } = new AuthMethods
         {
-            token = new List<Control>()
+            Token = new List<Control>()
             {
                 new Control()
                 {
-                    displayName = "Accepted Entity Type",
-                    type = "input",
-                    isRequired = true,
-                    name = KeyName.AcceptedEntityType
+                    DisplayName = "Accepted Entity Type",
+                    Type = "input",
+                    IsRequired = true,
+                    Name = KeyName.AcceptedEntityType,
+                    Help = "The entity type that defines the golden records you want to enrich (e.g., /Organization)."
                 },
                 new Control()
                 {
-                    displayName = "Organization Name vocab key",
-                    type = "input",
-                    isRequired = false,
-                    name = KeyName.OrgNameKey
+                    DisplayName = "Organization Name Vocabulary Key",
+                    Type = "input",
+                    IsRequired = false,
+                    Name = KeyName.OrgNameKey,
+                    Help = "The vocabulary key that contains the names of companies you want to enrich (e.g., organization.name)."
                 },
                 new Control()
                 {
-                    displayName = "Organization Name normalization",
-                    type = "checkbox",
-                    isRequired = false,
-                    name = KeyName.OrgNameNormalization,
+                    DisplayName = "Organization Name normalization",
+                    Type = "checkbox",
+                    IsRequired = false,
+                    Name = KeyName.OrgNameNormalization,
+                    Help = "Toggle to control the normalization of company names before searching the CVR register. Normalization removes trailing backslashes (\\), slashes (/), and vertical bars (|). Also, it changes the names to lowercase but will not affect names in CluedIn."
                 },
                 new Control()
                 {
-                    displayName = "Match Past Organization Names",
-                    type = "checkbox",
-                    isRequired = false,
-                    name = KeyName.OrgMatchPastNames,
+                    DisplayName = "Match Past Organization Names",
+                    Type = "checkbox",
+                    IsRequired = false,
+                    Name = KeyName.OrgMatchPastNames,
+                    Help = "Toggle to control if the search text (organization name) should match the latest data or any historical records in the CVR register. When disabled, the search will only consider exact matches to the most recent organization name in the register."
                 },
                 new Control()
                 {
-                    displayName = "CVR vocab key",
-                    type = "input",
-                    isRequired = false,
-                    name = KeyName.CVRKey
+                    DisplayName = "CVR Vocabulary Key",
+                    Type = "input",
+                    IsRequired = false,
+                    Name = KeyName.CVRKey,
+                    Help = "The vocabulary key that contains the CVR codes of companies you want to enrich (e.g., organization.cvrnumber)."
                 },
                 new Control()
                 {
-                    displayName = "Country vocab key",
-                    type = "input",
-                    isRequired = false,
-                    name = KeyName.CountryKey
+                    DisplayName = "Country Vocabulary Key",
+                    Type = "input",
+                    IsRequired = false,
+                    Name = KeyName.CountryKey,
+                    Help = "The vocabulary key that contains the countries of companies you want to enrich (e.g., organization.country)."
                 },
                 new Control()
                 {
-                    displayName = "Website vocab key",
-                    type = "input",
-                    isRequired = false,
-                    name = KeyName.WebsiteKey
+                    DisplayName = "Website Vocabulary Key",
+                    Type = "input",
+                    IsRequired = false,
+                    Name = KeyName.WebsiteKey,
+                    Help = "The vocabulary key that contains the websites of companies you want to enrich (e.g., organization.website)."
                 }
             }
         };
