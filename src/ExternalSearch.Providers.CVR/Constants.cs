@@ -10,6 +10,31 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         public const string ComponentName = "CVR";
         public const string ProviderName = "CVR";
         public static readonly Guid ProviderId = Core.Constants.ExternalSearchProviders.CVRId;
+        public const string Instruction = """
+            [
+              {
+                "type": "bulleted-list",
+                "children": [
+                  {
+                    "type": "list-item",
+                    "children": [
+                      {
+                        "text": "Add the entity type to specify the golden records you want to enrich. Only golden records belonging to that entity type will be enriched."
+                      }
+                    ]
+                  },
+                  {
+                    "type": "list-item",
+                    "children": [
+                      {
+                        "text": "Add the vocabulary keys to provide the input for the enricher to search for additional information. For example, if you provide the website vocabulary key for the Web enricher, it will use specific websites to look for information about companies. In some cases, vocabulary keys are not required. If you don't add them, the enricher will use default vocabulary keys."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+            """;
 
         public struct KeyName
         {
@@ -101,7 +126,10 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             //}
         };
 
-        public static Guide Guide { get; set; } = null;
+        public static Guide Guide { get; set; } = new Guide
+        {
+            Instructions = Instruction
+        };
         public static IntegrationType IntegrationType { get; set; } = IntegrationType.Enrichment;
     }
 }
