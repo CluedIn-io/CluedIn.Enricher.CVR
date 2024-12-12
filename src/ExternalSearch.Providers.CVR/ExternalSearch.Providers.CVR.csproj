@@ -17,4 +17,7 @@
     <PackageReference Include="CluedIn.Crawling" />
     <PackageReference Include="CluedIn.Core" />
   </ItemGroup>
+  <PropertyGroup>
+	<LangVersion>preview</LangVersion>
+  </PropertyGroup>
 </Project>
