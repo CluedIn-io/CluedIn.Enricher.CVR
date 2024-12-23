@@ -445,7 +445,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                         QueryString = new QueryString()
                         {
                             Query = "28866984",
-                            Fields = ["Vrvirksomhed.cvrNummer"]
+                            Fields = new List<string> { "Vrvirksomhed.cvrNummer" }
                         }
                     }
                 }).Trim();
@@ -480,15 +480,24 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                     QueryString = new QueryString()
                     {
                         Query = JsonConvert.ToString("Google"),
-                        Fields = new List<string>() { "Vrvirksomhed.navne.navn" }
+                        Fields = new List<string>() { cvrExternalSearchJobData.OrgMatchPastNames ? "Vrvirksomhed.navne.navn" : "Vrvirksomhed.virksomhedMetadata.nyesteNavn.navn" }
                     }
                 }
             });
 
             request = new RestRequest(Method.POST);
-            request.AddParameter("application/json", body, ParameterType.RequestBody);
 
-            return ConstructVerifyConnectionResponse(response);
+            if (!string.IsNullOrEmpty(userInfo))
+            {
+                var parts = userInfo.Split(':');
+
+                request.Credentials = new NetworkCredential(parts[0], parts[1]);
+            }
+
+            request.AddParameter("application/json", searchByNameBody, ParameterType.RequestBody);
+            var searchByNameResponse = client.Execute<CompanyResult>(request);
+
+            return ConstructVerifyConnectionResponse(searchByNameResponse);
         }
 
         public string Icon { get; } = Constants.Icon;
