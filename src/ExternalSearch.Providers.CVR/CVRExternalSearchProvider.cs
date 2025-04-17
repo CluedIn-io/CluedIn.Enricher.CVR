@@ -186,9 +186,12 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         /// <param name="resultItem">The result item.</param>
         private void PopulateMetadata(IEntityMetadata metadata, IExternalSearchQueryResult<CvrResult> resultItem, IExternalSearchRequest request)
         {
+            var code = new EntityCode(request.EntityMetaData.OriginEntityCode.Type, "CVR", $"{request.Queries.FirstOrDefault()?.QueryKey}{request.EntityMetaData.OriginEntityCode}".ToDeterministicGuid());
+
             metadata.EntityType             = request.EntityMetaData.EntityType;
             metadata.Name                   = request.EntityMetaData.Name;
-            metadata.OriginEntityCode       = request.EntityMetaData.OriginEntityCode;
+            metadata.OriginEntityCode       = code;
+            metadata.Codes.Add(request.EntityMetaData.OriginEntityCode);
 
             metadata.Aliases.AddRange(resultItem.Data.Organization.AlternateNames);
 
@@ -408,9 +411,14 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         {
             var resultItem = result.As<CvrResult>();
 
-
-            var clue = new Clue(request.EntityMetaData.OriginEntityCode, context.Organization);
-            clue.Data.OriginProviderDefinitionId = this.Id;
+            var code = new EntityCode(request.EntityMetaData.OriginEntityCode.Type, "CVR", $"{query.QueryKey}{request.EntityMetaData.OriginEntityCode}".ToDeterministicGuid());
+            var clue = new Clue(code, context.Organization)
+            {
+                Data =
+                {
+                    OriginProviderDefinitionId = Id
+                }
+            };
 
             this.PopulateMetadata(clue.Data.EntityData, resultItem, request);
 
