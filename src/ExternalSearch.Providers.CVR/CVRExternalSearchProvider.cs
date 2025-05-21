@@ -9,10 +9,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Globalization;
 using System.Linq;
-
+using System.Net;
+using System.Text.RegularExpressions;
 using CluedIn.Core;
+using CluedIn.Core.Connectors;
 using CluedIn.Core.Data;
 using CluedIn.Core.Data.Parts;
 using CluedIn.Core.Data.Relational;
@@ -27,14 +30,15 @@ using CluedIn.ExternalSearch.Providers.CVR.Model.Cvr;
 using CluedIn.ExternalSearch.Providers.CVR.Net;
 using CluedIn.ExternalSearch.Providers.CVR.Vocabularies;
 using CluedIn.Processing.EntityResolution;
-
+using Newtonsoft.Json;
+using RestSharp;
 using EntityType = CluedIn.Core.Data.EntityType;
 
 namespace CluedIn.ExternalSearch.Providers.CVR
 {
     /// <summary>The CVR external search provider</summary>
     /// <seealso cref="CluedIn.ExternalSearch.ExternalSearchProviderBase" />
-    public class CvrExternalSearchProvider : ExternalSearchProviderBase, IExtendedEnricherMetadata, IConfigurableExternalSearchProvider
+    public class CvrExternalSearchProvider : ExternalSearchProviderBase, IExtendedEnricherMetadata, IConfigurableExternalSearchProvider, IExternalSearchProviderWithVerifyConnection
     {
         private static readonly EntityType[] DefaultAcceptedEntityTypes = { };
 
@@ -182,9 +186,12 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         /// <param name="resultItem">The result item.</param>
         private void PopulateMetadata(IEntityMetadata metadata, IExternalSearchQueryResult<CvrResult> resultItem, IExternalSearchRequest request)
         {
+            var code = new EntityCode(request.EntityMetaData.OriginEntityCode.Type, "CVR", $"{request.Queries.FirstOrDefault()?.QueryKey}{request.EntityMetaData.OriginEntityCode}".ToDeterministicGuid());
+
             metadata.EntityType             = request.EntityMetaData.EntityType;
             metadata.Name                   = request.EntityMetaData.Name;
-            metadata.OriginEntityCode       = request.EntityMetaData.OriginEntityCode;
+            metadata.OriginEntityCode       = code;
+            metadata.Codes.Add(request.EntityMetaData.OriginEntityCode);
 
             metadata.Aliases.AddRange(resultItem.Data.Organization.AlternateNames);
 
@@ -303,6 +310,26 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             }
         }
 
+        private ConnectionVerificationResult ConstructVerifyConnectionResponse(IRestResponse response)
+        {
+            var errorMessageBase = $"{Constants.ProviderName} returned \"{(int)response.StatusCode} {response.StatusDescription}\".";
+            if (response.StatusCode is HttpStatusCode.Unauthorized)
+                return new ConnectionVerificationResult(false, $"{errorMessageBase} This could be due to invalid API key.");
+
+            if (response.ErrorException != null)
+                return new ConnectionVerificationResult(false, $"{errorMessageBase} {(!string.IsNullOrWhiteSpace(response.ErrorException.Message) ? response.ErrorException.Message : "This could be due to breaking changes in the external system")}.");
+
+            var regex = new Regex(@"\<(html|head|body|div|span|img|p\>|a href)", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
+            var isHtml = regex.IsMatch(response.Content);
+
+            string errorMessage = response.IsSuccessful ? string.Empty
+                : string.IsNullOrWhiteSpace(response.Content) || isHtml
+                    ? $"{errorMessageBase} This could be due to breaking changes in the external system."
+                    : $"{errorMessageBase} {response.Content}.";
+
+            return new ConnectionVerificationResult(response.IsSuccessful, errorMessage);
+        }
+
         public IEnumerable<EntityType> Accepts(IDictionary<string, object> config, IProvider provider) => this.Accepts(config);
 
         private IEnumerable<EntityType> Accepts(IDictionary<string, object> config)
@@ -384,9 +411,14 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         {
             var resultItem = result.As<CvrResult>();
 
-
-            var clue = new Clue(request.EntityMetaData.OriginEntityCode, context.Organization);
-            clue.Data.OriginProviderDefinitionId = this.Id;
+            var code = new EntityCode(request.EntityMetaData.OriginEntityCode.Type, "CVR", $"{query.QueryKey}{request.EntityMetaData.OriginEntityCode}".ToDeterministicGuid());
+            var clue = new Clue(code, context.Organization)
+            {
+                Data =
+                {
+                    OriginProviderDefinitionId = Id
+                }
+            };
 
             this.PopulateMetadata(clue.Data.EntityData, resultItem, request);
 
@@ -404,6 +436,77 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             return null;
         }
 
+        public ConnectionVerificationResult VerifyConnection(ExecutionContext context, IReadOnlyDictionary<string, object> config)
+        {
+            IDictionary<string, object> configDict = config.ToDictionary(entry => entry.Key, entry => entry.Value);
+            var cvrExternalSearchJobData = new CvrExternalSearchJobData(configDict);
+
+            var endpointLive = ConfigurationManager.AppSettings["Providers.ExternalSearch.CVR.LiveEndPoint"] ?? "http://CluedIn_CVR_I_SKYEN:cb4821e8-bee2-45fe-8b9d-27cd6c4eff66@distribution.virk.dk/cvr-permanent/_search";
+            var endpoint = new Uri(endpointLive);
+            var body =
+                JsonUtility.Serialize(new Body()
+                {
+                    From = 0,
+                    Size = 1,
+                    Query = new Query()
+                    {
+                        QueryString = new QueryString()
+                        {
+                            Query = "28866984",
+                            Fields = new List<string> { "Vrvirksomhed.cvrNummer" }
+                        }
+                    }
+                }).Trim();
+
+            var client = new RestClient(endpoint);
+            var request = new RestRequest(Method.POST);
+
+            var userInfo = endpoint.UserInfo;
+            if (!string.IsNullOrEmpty(userInfo))
+            {
+                var parts = userInfo.Split(':');
+
+                request.Credentials = new NetworkCredential(parts[0], parts[1]);
+            }
+
+            request.AddParameter("application/json", body, ParameterType.RequestBody);
+
+            var response = client.Execute<CompanyResult>(request);
+
+            if (!response.IsSuccessful)
+            {
+                return ConstructVerifyConnectionResponse(response);
+            }
+
+            var searchByNameBody =
+            JsonUtility.Serialize(new Body()
+            {
+                From = 0,
+                Size = 50,
+                Query = new Query()
+                {
+                    QueryString = new QueryString()
+                    {
+                        Query = JsonConvert.ToString("Google"),
+                        Fields = new List<string>() { cvrExternalSearchJobData.OrgMatchPastNames ? "Vrvirksomhed.navne.navn" : "Vrvirksomhed.virksomhedMetadata.nyesteNavn.navn" }
+                    }
+                }
+            });
+
+            request = new RestRequest(Method.POST);
+
+            if (!string.IsNullOrEmpty(userInfo))
+            {
+                var parts = userInfo.Split(':');
+
+                request.Credentials = new NetworkCredential(parts[0], parts[1]);
+            }
+
+            request.AddParameter("application/json", searchByNameBody, ParameterType.RequestBody);
+            var searchByNameResponse = client.Execute<CompanyResult>(request);
+
+            return ConstructVerifyConnectionResponse(searchByNameResponse);
+        }
 
         public string Icon { get; } = Constants.Icon;
         public string Domain { get; } = Constants.Domain;
