@@ -20,12 +20,12 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
     {
         public Result<CvrOrganization> GetCompanyByCvrNumber(int cvrNumber)
         {
-            return CallCvr(uri => this.GetCompanyByCvrNumber(cvrNumber, uri));
+            return CallCvr(uri => GetCompanyByCvrNumber(cvrNumber, uri));
         }
 
         public IEnumerable<Result<CvrOrganization>> GetCompanyByName(string name, bool matchPastNames)
         {
-            return CallCvr(uri => this.GetCompanyByName(name, uri, matchPastNames));
+            return CallCvr(uri => GetCompanyByName(name, uri, matchPastNames));
         }
 
         private T CallCvr<T>(Func<Uri, T> searchFunc)
@@ -67,9 +67,9 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
                     From = 0,
                     Size = 1,
                     Query = new Query() {
-                        QueryString = new QueryString() {
+                        QueryString = new QueryString {
                             Query = cvrNumber,
-                            Fields = new List<string>() { "Vrvirksomhed.cvrNummer" }
+                            Fields = ["Vrvirksomhed.cvrNummer"]
                         }
                     }
                 });
@@ -80,13 +80,18 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
         public IEnumerable<Result<CvrOrganization>> GetCompanyByName(string name, Uri endPoint, bool matchPastNames)
         {
             var body =
-                 JsonUtility.Serialize(new Body() {
+                 JsonUtility.Serialize(new Body {
                      From = 0,
                      Size = 50,
-                     Query = new Query() {
-                         QueryString = new QueryString() {
+                     Query = new Query {
+                         QueryString = new QueryString {
                              Query = JsonConvert.ToString(name),
-                             Fields = new List<string>() { matchPastNames ? "Vrvirksomhed.navne.navn" : "Vrvirksomhed.virksomhedMetadata.nyesteNavn.navn" }
+                             Fields =
+                             [
+                                 matchPastNames
+                                     ? "Vrvirksomhed.navne.navn"
+                                     : "Vrvirksomhed.virksomhedMetadata.nyesteNavn.navn"
+                             ]
                          }
                      }
                  });
@@ -96,17 +101,17 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
 
         private Result<CvrOrganization> GetCompany(string queryBody, Uri endPoint, string name, bool matchPastNames)
         {
-            return this.GetCompanyResult(
+            return GetCompanyResult(
                 queryBody, 
                 endPoint,
-                (hits, response, json, name, matchPastNames) =>
+                (hits, response, json, _, _) =>
                     {
                         var hit = hits.FirstOrDefault();
 
                         if (hit == null)
                             return null;
 
-                        var result = this.CreateCompanyResult(hit, response, json);
+                        var result = CreateCompanyResult(hit, json);
 
                         if (result != null)
                             result.RawContent = response.Content;
@@ -120,10 +125,10 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
 
         private IEnumerable<Result<CvrOrganization>> GetCompanies(string queryBody, Uri endPoint, string name, bool matchPastNames)
         {
-            return this.GetCompanyResult(
+            return GetCompanyResult(
                 queryBody, 
                 endPoint,
-                this.BuildHits,
+                BuildHits,
                 name,
                 matchPastNames
             );
@@ -133,16 +138,9 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
         {
             if (hits == null || string.IsNullOrEmpty(name)) yield break;
 
-            Hit hit;
-            if (matchPastNames)
-            {
-                hit = hits.FirstOrDefault(e => e._source.Vrvirksomhed.navne.Any(navne => navne.Navn.Equals(name, StringComparison.InvariantCultureIgnoreCase)));
-            } else
-            {
-                hit = hits.FirstOrDefault(e => e._source.Vrvirksomhed.virksomhedMetadata.NyesteNavn.Navn.Equals(name, StringComparison.InvariantCultureIgnoreCase));
-            }
+            var hit = matchPastNames ? hits.FirstOrDefault(e => e._source.Vrvirksomhed.navne.Any(navne => navne.Navn.Equals(name, StringComparison.InvariantCultureIgnoreCase))) : hits.FirstOrDefault(e => e._source.Vrvirksomhed.virksomhedMetadata.NyesteNavn.Navn.Equals(name, StringComparison.InvariantCultureIgnoreCase));
             
-            yield return this.CreateCompanyResult(hit, response, json);
+            yield return CreateCompanyResult(hit, json);
         }
 
         private T GetCompanyResult<T>(string queryBody, Uri endPoint, Func<IEnumerable<Hit>, IRestResponse<CompanyResult>, JObject, string, bool, T> resultFunc, string name, bool matchPastNames)
@@ -165,28 +163,28 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
 
             var response = client.Execute<CompanyResult>(request);
 
-            if (response.Data != null && response.Data?.hits != null)
+            if (response.Data is { hits: not null })
             {
                 var json = JObject.Parse(response.Content);
 
                 return resultFunc(response.Data?.hits?.hits, response, json, name, matchPastNames);
             }
-            else if (response.StatusCode == HttpStatusCode.NotFound)
-                return default(T);
-            else
-                throw new Exception(string.Format("Could not get cvr company - StatusCode: {0}; Message: {1}", response.StatusCode, response.ErrorMessage));
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+                return default;
+
+            throw new Exception(
+                $"Could not get cvr company - StatusCode: {response.StatusCode}; Message: {response.ErrorMessage}");
         }
 
-        private DateTime? GetLastUpdated(JObject vrvirksomhedNode, int cvrNumber)
+        private DateTime? GetLastUpdated(JObject vrvirksomhedNode)
         {
             var lastUpdatedNodes = vrvirksomhedNode.SelectTokens("$..sidstOpdateret");
 
             var lastUpdated = lastUpdatedNodes.Select(
                 t =>
                     {
-                        DateTime date;
-
-                        if (!string.IsNullOrEmpty(t.Value<string>()) && DateTime.TryParse(t.Value<string>(), out date))
+                        if (!string.IsNullOrEmpty(t.Value<string>()) && DateTime.TryParse(t.Value<string>(), out var date))
                              return date as DateTime?;
 
                         return null;
@@ -200,32 +198,33 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
         private JObject GetOrganizationJsonToken(JObject json, int cvrNumber)
         {
             var vrvirksomhedNode = json.SelectTokens("$..Vrvirksomhed")
-                .FirstOrDefault(t => t is JObject && (int)((JObject)t).Property("cvrNummer").Value == cvrNumber);
+                .FirstOrDefault(t => t is JObject jObject && (int)jObject.Property("cvrNummer")?.Value == cvrNumber);
 
             return vrvirksomhedNode as JObject;
         }
 
-        private Result<CvrOrganization> CreateCompanyResult(Hit hit, IRestResponse<CompanyResult> response, JObject responseJson)
+        private Result<CvrOrganization> CreateCompanyResult(Hit hit, JObject responseJson)
         {
             var org                 = hit?._source?.Vrvirksomhed;
             if (org == null) return null;
 
-            var vrvirksomhedNode    = this.GetOrganizationJsonToken(responseJson, org.cvrNummer);
-            var lastUpdated         = this.GetLastUpdated(vrvirksomhedNode, org.cvrNummer);
+            var vrvirksomhedNode    = GetOrganizationJsonToken(responseJson, org.cvrNummer);
+            var lastUpdated         = GetLastUpdated(vrvirksomhedNode);
 
             // TODO
-            return new Result<CvrOrganization>(responseJson.ToString(), this.CreateCvrResult(org, lastUpdated));
+            return new Result<CvrOrganization>(responseJson.ToString(), CreateCvrResult(org, lastUpdated));
         }
 
         private CvrOrganization CreateCvrResult(Vrvirksomhed org, DateTimeOffset? lastUpdated)
         {
-            var result = new CvrOrganization();
+            var result = new CvrOrganization
+            {
+                CvrNumber = org.cvrNummer,
+                Name = org.virksomhedMetadata.NyesteNavn.Navn,
+                ModifiedDate = lastUpdated
+            };
 
-            result.CvrNumber    = org.cvrNummer;
-            result.Name         = org.virksomhedMetadata.NyesteNavn.Navn;
-            result.ModifiedDate = lastUpdated;
-
-            foreach (var name in org.navne ?? new List<Navne>())
+            foreach (var name in org.navne ?? [])
                 result.AlternateNames.Add(name.Navn);
 
             foreach (var name in org.attributter.Where(a => a.Type == "NAVN_IDENTITET").SelectMany(a => a.Vaerdier))
@@ -246,52 +245,51 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
             result.Status                       = org.virksomhedMetadata.SammensatStatus;
             result.FoundingDate                 = org.virksomhedMetadata.StiftelsesDato;
             result.StartDate                    = life != null ? life.periode.GyldigFra : result.FoundingDate;
-            result.EndDate                      = life != null ? life.periode.GyldigTil : null;
+            result.EndDate                      = life?.periode.GyldigTil;
 
             if (result.EndDate != null)
                 date = result.EndDate.Value;
 
-            result.Email                        = this.GetCurrentValue(org.elektroniskPost, e => e.Periode, e => !e.Hemmelig, e => e.Kontaktoplysning, date);
-            result.Website                      = this.GetCurrentValue(org.hjemmeside, e => e.Periode, e => !e.Hemmelig, e => e.Kontaktoplysning, date);
-            result.PhoneNumber                  = this.GetCurrentValue(org.telefonNummer, e => e.Periode, e => !e.Hemmelig, e => e.Kontaktoplysning, date);
-            result.FaxNumber                    = this.GetCurrentValue(org.telefaxNummer, e => e.Periode, e => !e.Hemmelig, e => e.Kontaktoplysning, date);
+            result.Email                        = GetCurrentValue(org.elektroniskPost, e => e.Periode, e => !e.Hemmelig, e => e.Kontaktoplysning, date);
+            result.Website                      = GetCurrentValue(org.hjemmeside, e => e.Periode, e => !e.Hemmelig, e => e.Kontaktoplysning, date);
+            result.PhoneNumber                  = GetCurrentValue(org.telefonNummer, e => e.Periode, e => !e.Hemmelig, e => e.Kontaktoplysning, date);
+            result.FaxNumber                    = GetCurrentValue(org.telefaxNummer, e => e.Periode, e => !e.Hemmelig, e => e.Kontaktoplysning, date);
 
-            result.Address                      = org.virksomhedMetadata.NyesteBeliggenhedsadresse ?? this.GetCurrentValue(org.beliggenhedsadresse, i => i.Periode, date);
-            result.PostalAddress                = this.GetCurrentValue(org.postadresse, i => i.Periode, date);
-            result.Municipality                 = result.Address != null ? result.Address.Kommune.kommuneNavn : null;
+            result.Address                      = org.virksomhedMetadata.NyesteBeliggenhedsadresse ?? GetCurrentValue(org.beliggenhedsadresse, i => i.Periode, date);
+            result.PostalAddress                = GetCurrentValue(org.postadresse, i => i.Periode, date);
+            result.Municipality                 = result.Address?.Kommune.kommuneNavn;
 
             result.OptOutSalesAndAdvertising    = org.reklamebeskyttet;
 
-            result.CompanyTypeCode              = org.virksomhedMetadata.NyesteVirksomhedsform != null ? org.virksomhedMetadata.NyesteVirksomhedsform.Virksomhedsformkode : 0;
-            result.CompanyTypeLongName          = org.virksomhedMetadata.NyesteVirksomhedsform != null ? org.virksomhedMetadata.NyesteVirksomhedsform.LangBeskrivelse : null;
-            result.CompanyTypeShortName         = org.virksomhedMetadata.NyesteVirksomhedsform != null ? org.virksomhedMetadata.NyesteVirksomhedsform.KortBeskrivelse : null;
+            result.CompanyTypeCode              = org.virksomhedMetadata.NyesteVirksomhedsform?.Virksomhedsformkode ?? 0;
+            result.CompanyTypeLongName          = org.virksomhedMetadata.NyesteVirksomhedsform?.LangBeskrivelse;
+            result.CompanyTypeShortName         = org.virksomhedMetadata.NyesteVirksomhedsform?.KortBeskrivelse;
 
-            result.FiscalYearStart              = this.GetCurrentValue(org.attributter.Where(a => a.Type == "REGNSKABSÅR_START").SelectMany(a => a.Vaerdier), v => v.Periode, v => true, v => v.Vaerdi, date);
-            result.FiscalYearEnd                = this.GetCurrentValue(org.attributter.Where(a => a.Type == "REGNSKABSÅR_SLUT").SelectMany(a => a.Vaerdier), v => v.Periode, v => true, v => v.Vaerdi, date);
+            result.FiscalYearStart              = GetCurrentValue(org.attributter.Where(a => a.Type == "REGNSKABSÅR_START").SelectMany(a => a.Vaerdier), v => v.Periode, _ => true, v => v.Vaerdi, date);
+            result.FiscalYearEnd                = GetCurrentValue(org.attributter.Where(a => a.Type == "REGNSKABSÅR_SLUT").SelectMany(a => a.Vaerdier), v => v.Periode, _ => true, v => v.Vaerdi, date);
 
-            DateTimeOffset dummy;
-            result.FirstFiscalYearStart         = this.GetCurrentValue(org.attributter.Where(a => a.Type == "FØRSTE_REGNSKABSPERIODE_START").SelectMany(a => a.Vaerdier), v => v.Periode, v => DateTimeOffset.TryParse(v.Vaerdi, out dummy), v => (DateTimeOffset?)DateTimeOffset.Parse(v.Vaerdi), date);
-            result.FirstFiscalYearEnd           = this.GetCurrentValue(org.attributter.Where(a => a.Type == "FØRSTE_REGNSKABSPERIODE_SLUT").SelectMany(a => a.Vaerdier), v => v.Periode, v => DateTimeOffset.TryParse(v.Vaerdi, out dummy), v => (DateTimeOffset?)DateTimeOffset.Parse(v.Vaerdi), date);
+            result.FirstFiscalYearStart         = GetCurrentValue(org.attributter.Where(a => a.Type == "FØRSTE_REGNSKABSPERIODE_START").SelectMany(a => a.Vaerdier), v => v.Periode, v => DateTimeOffset.TryParse(v.Vaerdi, out _), v => (DateTimeOffset?)DateTimeOffset.Parse(v.Vaerdi), date);
+            result.FirstFiscalYearEnd           = GetCurrentValue(org.attributter.Where(a => a.Type == "FØRSTE_REGNSKABSPERIODE_SLUT").SelectMany(a => a.Vaerdier), v => v.Periode, v => DateTimeOffset.TryParse(v.Vaerdi, out _), v => (DateTimeOffset?)DateTimeOffset.Parse(v.Vaerdi), date);
 
-            result.Purpose                      = this.GetCurrentValue(org.attributter.Where(a => a.Type == "FORMÅL").SelectMany(a => a.Vaerdier), v => v.Periode, v => true, v => v.Vaerdi, date);
-            result.RegisteredCapital            = this.GetCurrentValue(org.attributter.Where(a => a.Type == "KAPITAL").SelectMany(a => a.Vaerdier), v => v.Periode, v => true, v => v.Vaerdi, date);
-            result.RegisteredCapitalCurrency    = this.GetCurrentValue(org.attributter.Where(a => a.Type == "KAPITALVALUTA").SelectMany(a => a.Vaerdier), v => v.Periode, v => true, v => v.Vaerdi, date);
-            result.StatutesLastChanged          = this.GetCurrentValue(org.attributter.Where(a => a.Type == "VEDTÆGT_SENESTE").SelectMany(a => a.Vaerdier), v => v.Periode, v => true, v => v.Vaerdi, date);
-            result.HasShareCapitalClasses       = this.GetCurrentValue(org.attributter.Where(a => a.Type == "KAPITALKLASSER").SelectMany(a => a.Vaerdier), v => v.Periode, v => true, v => v.Vaerdi, date);
+            result.Purpose                      = GetCurrentValue(org.attributter.Where(a => a.Type == "FORMÅL").SelectMany(a => a.Vaerdier), v => v.Periode, _ => true, v => v.Vaerdi, date);
+            result.RegisteredCapital            = GetCurrentValue(org.attributter.Where(a => a.Type == "KAPITAL").SelectMany(a => a.Vaerdier), v => v.Periode, _ => true, v => v.Vaerdi, date);
+            result.RegisteredCapitalCurrency    = GetCurrentValue(org.attributter.Where(a => a.Type == "KAPITALVALUTA").SelectMany(a => a.Vaerdier), v => v.Periode, _ => true, v => v.Vaerdi, date);
+            result.StatutesLastChanged          = GetCurrentValue(org.attributter.Where(a => a.Type == "VEDTÆGT_SENESTE").SelectMany(a => a.Vaerdier), v => v.Periode, _ => true, v => v.Vaerdi, date);
+            result.HasShareCapitalClasses       = GetCurrentValue(org.attributter.Where(a => a.Type == "KAPITALKLASSER").SelectMany(a => a.Vaerdier), v => v.Periode, _ => true, v => v.Vaerdi, date);
 
             result.MainIndustry                 = org.virksomhedMetadata.NyesteHovedbranche != null ? new IndustryDescription(org.virksomhedMetadata.NyesteHovedbranche) : null;
             result.OtherIndustry1               = org.virksomhedMetadata.NyesteBibranche1 != null ? new IndustryDescription(org.virksomhedMetadata.NyesteBibranche1) : null;
             result.OtherIndustry2               = org.virksomhedMetadata.NyesteBibranche2 != null ? new IndustryDescription(org.virksomhedMetadata.NyesteBibranche2) : null;
             result.OtherIndustry3               = org.virksomhedMetadata.NyesteBibranche3 != null ? new IndustryDescription(org.virksomhedMetadata.NyesteBibranche3) : null;
 
-            result.NumberOfEmployees            = this.GetEmploymentRange(org);
+            result.NumberOfEmployees            = GetEmploymentRange(org);
 
             return result;
         }
 
         private Range<int> GetEmploymentRange(Vrvirksomhed org)
         {
-            DateTime latestEmployment = DateTime.MinValue;
+            var latestEmployment = DateTime.MinValue;
             Range<int> employmentRange = null;
 
             if (org.virksomhedMetadata.NyesteAarsbeskaeftigelse != null)
@@ -338,7 +336,6 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
                 if (rangeMatch.Success && date > latestEmployment)
                 {
                     employmentRange  = new Range<int>(int.Parse(rangeMatch.Groups["from"].Value), int.Parse(rangeMatch.Groups["to"].Value));
-                    latestEmployment = date;
                 }
             }
 
@@ -348,13 +345,13 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
         private T2 GetCurrentValue<T, T2>(IEnumerable<T> items, Func<T, Periode> periodSelector, Func<T, bool> filter, Func<T, T2> selector, DateTime date)
             where T : class
         {
-            return this.GetCurrentValue(items, periodSelector, filter, selector, default(T2), date);
+            return GetCurrentValue(items, periodSelector, filter, selector, default, date);
         }
 
         private T2 GetCurrentValue<T, T2>(IEnumerable<T> items, Func<T, Periode> periodSelector, Func<T, bool> filter, Func<T, T2> selector, T2 defaultValue, DateTime date)
             where T : class
         {
-            var currentValue = GetCurrentValue<T>(items, periodSelector, date);
+            var currentValue = GetCurrentValue(items, periodSelector, date);
 
             if (currentValue == null || !filter(currentValue))
                 return defaultValue;
@@ -365,10 +362,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
         private T GetCurrentValue<T>(IEnumerable<T> items, Func<T, Periode> selector, DateTime date)
             where T : class
         {
-            if (items == null)
-                return null;
-
-            var currentValue = items.FirstOrDefault(i => this.IsCurrent(selector(i), date));
+            var currentValue = items?.FirstOrDefault(i => IsCurrent(selector(i), date));
 
             return currentValue;
         }

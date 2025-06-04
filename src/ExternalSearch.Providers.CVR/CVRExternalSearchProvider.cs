@@ -40,7 +40,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
     /// <seealso cref="CluedIn.ExternalSearch.ExternalSearchProviderBase" />
     public class CvrExternalSearchProvider : ExternalSearchProviderBase, IExtendedEnricherMetadata, IConfigurableExternalSearchProvider, IExternalSearchProviderWithVerifyConnection
     {
-        private static readonly EntityType[] DefaultAcceptedEntityTypes = { };
+        private static readonly EntityType[] DefaultAcceptedEntityTypes = [];
 
         /**********************************************************************************************************
          * CONSTRUCTORS
@@ -80,8 +80,8 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             var postFixes = new[] { "A/S", "AS", "ApS", "IVS", "I/S", "IS", "K/S", "KS", "G/S", "GS", "P/S", "PS", "Enkeltmandsvirksomhed", "Forening", "Partsrederi", "Selskab", "virksomhed" }.Select(v => v.ToLowerInvariant()).ToHashSet();
             var contains  = new[] { " dk", "dk ", "denmark", "danmark", "dansk", "æ", "ø", "å" }.Select(v => v.ToLowerInvariant()).ToHashSet();
 
-            Func<string, bool> cvrFilter            = value => existingResults.Any(r => string.Equals(r.Data.CvrNumber.ToString(CultureInfo.InvariantCulture), value, StringComparison.InvariantCultureIgnoreCase));
-            Func<string, bool> nameFilter           = value => OrganizationFilters.NameFilter(context, value);
+            bool CvrFilter(string value) => existingResults.Any(r => string.Equals(r.Data.CvrNumber.ToString(CultureInfo.InvariantCulture), value, StringComparison.InvariantCultureIgnoreCase));
+            bool NameFilter(string value) => OrganizationFilters.NameFilter(context, value);
             Func<string, bool> namePostFixFilter    = value =>
                 {
                     value = value.ToLowerInvariant();
@@ -98,10 +98,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                             return false;
                     }
 
-                    if (postFixes.Any(v => value.EndsWith(v)))
-                        return false;
-
-                    return true;
+                    return !postFixes.Any(v => value.EndsWith(v));
                 };
 
             // Query Input
@@ -117,27 +114,19 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                 if (country.Any(v => string.Equals(v, "dk", StringComparison.InvariantCultureIgnoreCase) || 
                                      string.Equals(v, "denmark", StringComparison.InvariantCultureIgnoreCase) ||
                                      string.Equals(v, "danmark", StringComparison.InvariantCultureIgnoreCase)))
-                    namePostFixFilter = value => false;
+                    namePostFixFilter = _ => false;
             }
             if (website != null)
             {
-                var hosts = website.Where(u => UriUtility.IsValid(u)).Select(u => new Uri(u).Host.ToLowerInvariant()).Distinct();
+                var hosts = website.Where(UriUtility.IsValid).Select(u => new Uri(u).Host.ToLowerInvariant()).Distinct();
 
-                if (hosts.Any(h =>
-                    {
-                        if (!DomainName.TryParse(h, out var domain))
-                            return false;
-
-                        return string.Equals(domain.TLD, "dk", StringComparison.InvariantCultureIgnoreCase);
-                    }))
-                    namePostFixFilter = value => false;
+                if (hosts.Any(h => DomainName.TryParse(h, out var domain) && string.Equals(domain.TLD, "dk", StringComparison.InvariantCultureIgnoreCase)))
+                    namePostFixFilter = _ => false;
             }
 
             if (cvrNumber.Any())
             {
-                var values = cvrNumber;
-
-                foreach (var value in values.Where(v => !cvrFilter(v)))
+                foreach (var value in cvrNumber.Where(v => !CvrFilter(v)))
                 {
                     if (int.TryParse(value, out var result))
                         yield return new ExternalSearchQuery(this, entityType, ExternalSearchQueryParameter.Identifier, result.ToString());
@@ -145,7 +134,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             }
             else if (organizationName != null)
             {
-                var values = jobData.OrgNameNormalization ? Enumerable.ToHashSet(organizationName.Select(NameNormalization.Normalize)).Where(v => !nameFilter(v) && !namePostFixFilter(v)) : organizationName;
+                var values = jobData.OrgNameNormalization ? organizationName.Select(NameNormalization.Normalize).ToHashSet().Where(v => !NameFilter(v) && !namePostFixFilter(v)) : organizationName;
 
                 foreach (var value in values)
                 {
@@ -159,31 +148,25 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             HashSet<string> value;
             if (config.TryGetValue(keyName, out var customVocabKey) && !string.IsNullOrWhiteSpace(customVocabKey?.ToString()))
             {
-                value = request.QueryParameters.GetValue<string, HashSet<string>>(customVocabKey.ToString(), new HashSet<string>());
+                value = request.QueryParameters.GetValue(customVocabKey.ToString(), []);
             }
             else
             {
-                value = request.QueryParameters.GetValue(defaultKey, new HashSet<string>());
+                value = request.QueryParameters.GetValue(defaultKey, []);
             }
 
             return value;
         }
 
-        /// <summary>Creates the metadata.</summary>
-        /// <param name="resultItem">The result item.</param>
-        /// <returns>The metadata.</returns>
         private IEntityMetadata CreateMetadata(IExternalSearchQueryResult<CvrResult> resultItem, IExternalSearchRequest request)
         {
             var metadata = new EntityMetadataPart();
 
-            this.PopulateMetadata(metadata, resultItem, request);
+            PopulateMetadata(metadata, resultItem, request);
 
             return metadata;
         }
 
-        /// <summary>Populates the metadata.</summary>
-        /// <param name="metadata">The metadata.</param>
-        /// <param name="resultItem">The result item.</param>
         private void PopulateMetadata(IEntityMetadata metadata, IExternalSearchQueryResult<CvrResult> resultItem, IExternalSearchRequest request)
         {
             var code = new EntityCode(request.EntityMetaData.OriginEntityCode.Type, "CVR", $"{request.Queries.FirstOrDefault()?.QueryKey}{request.EntityMetaData.OriginEntityCode}".ToDeterministicGuid());
@@ -214,7 +197,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             metadata.Properties[CvrVocabulary.Organization.MainIndustryDescription]     = resultItem.Data.Organization.MainIndustry.PrintIfAvailable(v => v.Description);
             metadata.Properties[CvrVocabulary.Organization.Municipality]                = resultItem.Data.Organization.Municipality;
             metadata.Properties[CvrVocabulary.Organization.Name]                        = resultItem.Data.Organization.Name;
-            metadata.Properties[CvrVocabulary.Organization.NumberOfEmployees]           = resultItem.Data.Organization.NumberOfEmployees.PrintIfAvailable(v => v.Minimum == v.Maximum ? v.Maximum.PrintIfAvailable() : string.Format("{0}-{1}", v.Minimum, v.Maximum));
+            metadata.Properties[CvrVocabulary.Organization.NumberOfEmployees]           = resultItem.Data.Organization.NumberOfEmployees.PrintIfAvailable(v => v.Minimum == v.Maximum ? v.Maximum.PrintIfAvailable() : $"{v.Minimum}-{v.Maximum}");
             metadata.Properties[CvrVocabulary.Organization.OptOutSalesAndAdvertising]   = resultItem.Data.Organization.OptOutSalesAndAdvertising.PrintIfAvailable();
             metadata.Properties[CvrVocabulary.Organization.PhoneNumber]                 = resultItem.Data.Organization.PhoneNumber;
             metadata.Properties[CvrVocabulary.Organization.ProductionUnitCount]         = resultItem.Data.Organization.ProductionUnitCount.PrintIfAvailable();
@@ -239,27 +222,26 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             if (resultItem.Data.Organization.PostalAddress != null)
                 PopulateAddress(metadata, CvrVocabulary.Organization.PostalAddress, resultItem.Data.Organization.PostalAddress);
 
-            if (resultItem.Data.FinancialReportSummary != null)
-            {
-                if (metadata.ModifiedDate == null || resultItem.Data.FinancialReportSummary.DateOfApprovalOfReport > metadata.ModifiedDate)
-                    metadata.ModifiedDate = resultItem.Data.FinancialReportSummary.DateOfApprovalOfReport;
+            if (resultItem.Data.FinancialReportSummary == null) return;
 
-                var currency = resultItem.Data.FinancialReportSummary.Currency;
-                metadata.Properties[CvrVocabulary.Organization.FinancialReportSummaryYear]                                      = resultItem.Data.FinancialReportSummary.Year.PrintIfAvailable();
-                metadata.Properties[CvrVocabulary.Organization.FinancialReportSummaryEquity]                                    = resultItem.Data.FinancialReportSummary.Equity.PrintIfAvailable(a => currency != null ? a.Value.PrintIfAvailable() : a.ToString());
-                metadata.Properties[CvrVocabulary.Organization.FinancialReportSummaryGrossProfitLoss]                           = resultItem.Data.FinancialReportSummary.GrossProfitLoss.PrintIfAvailable(a => currency != null ? a.Value.PrintIfAvailable() : a.ToString());
-                metadata.Properties[CvrVocabulary.Organization.FinancialReportSummaryLiabilitiesAndEquity]                      = resultItem.Data.FinancialReportSummary.LiabilitiesAndEquity.PrintIfAvailable(a => currency != null ? a.Value.PrintIfAvailable() : a.ToString());
-                metadata.Properties[CvrVocabulary.Organization.FinancialReportSummaryProfitLoss]                                = resultItem.Data.FinancialReportSummary.ProfitLoss.PrintIfAvailable(a => currency != null ? a.Value.PrintIfAvailable() : a.ToString());
-                metadata.Properties[CvrVocabulary.Organization.FinancialReportSummaryProfitLossFromOrdinaryActivitiesBeforeTax] = resultItem.Data.FinancialReportSummary.ProfitLossFromOrdinaryActivitiesBeforeTax.PrintIfAvailable(a => currency != null ? a.Value.PrintIfAvailable() : a.ToString());
-                metadata.Properties[CvrVocabulary.Organization.FinancialReportSummaryCurrency]                                  = currency;
+            if (metadata.ModifiedDate == null || resultItem.Data.FinancialReportSummary.DateOfApprovalOfReport > metadata.ModifiedDate)
+                metadata.ModifiedDate = resultItem.Data.FinancialReportSummary.DateOfApprovalOfReport;
 
-                var financialReportPdf = resultItem.Data.FinancialReport.Dokumenter.FirstOrDefault(d => d.DokumentMimeType == "application/pdf");
+            var currency = resultItem.Data.FinancialReportSummary.Currency;
+            metadata.Properties[CvrVocabulary.Organization.FinancialReportSummaryYear]                                      = resultItem.Data.FinancialReportSummary.Year.PrintIfAvailable();
+            metadata.Properties[CvrVocabulary.Organization.FinancialReportSummaryEquity]                                    = resultItem.Data.FinancialReportSummary.Equity.PrintIfAvailable(a => currency != null ? a.Value.PrintIfAvailable() : a.ToString());
+            metadata.Properties[CvrVocabulary.Organization.FinancialReportSummaryGrossProfitLoss]                           = resultItem.Data.FinancialReportSummary.GrossProfitLoss.PrintIfAvailable(a => currency != null ? a.Value.PrintIfAvailable() : a.ToString());
+            metadata.Properties[CvrVocabulary.Organization.FinancialReportSummaryLiabilitiesAndEquity]                      = resultItem.Data.FinancialReportSummary.LiabilitiesAndEquity.PrintIfAvailable(a => currency != null ? a.Value.PrintIfAvailable() : a.ToString());
+            metadata.Properties[CvrVocabulary.Organization.FinancialReportSummaryProfitLoss]                                = resultItem.Data.FinancialReportSummary.ProfitLoss.PrintIfAvailable(a => currency != null ? a.Value.PrintIfAvailable() : a.ToString());
+            metadata.Properties[CvrVocabulary.Organization.FinancialReportSummaryProfitLossFromOrdinaryActivitiesBeforeTax] = resultItem.Data.FinancialReportSummary.ProfitLossFromOrdinaryActivitiesBeforeTax.PrintIfAvailable(a => currency != null ? a.Value.PrintIfAvailable() : a.ToString());
+            metadata.Properties[CvrVocabulary.Organization.FinancialReportSummaryCurrency]                                  = currency;
 
-                if (financialReportPdf != null)
-                    metadata.Properties[CvrVocabulary.Organization.FinancialReportSummaryPdfLink]                   = financialReportPdf.DokumentUrl;
+            var financialReportPdf = resultItem.Data.FinancialReport.Dokumenter.FirstOrDefault(d => d.DokumentMimeType == "application/pdf");
 
-                metadata.Properties[CluedIn.Core.Data.Vocabularies.Vocabularies.CluedInOrganization.AnnualRevenue]  = resultItem.Data.FinancialReportSummary.GrossProfitLoss.PrintIfAvailable(a => a.Value.PrintIfAvailable() + " " + a.UnitClean);
-            }
+            if (financialReportPdf != null)
+                metadata.Properties[CvrVocabulary.Organization.FinancialReportSummaryPdfLink]                   = financialReportPdf.DokumentUrl;
+
+            metadata.Properties[Core.Data.Vocabularies.Vocabularies.CluedInOrganization.AnnualRevenue]  = resultItem.Data.FinancialReportSummary.GrossProfitLoss.PrintIfAvailable(a => a.Value.PrintIfAvailable() + " " + a.UnitClean);
         }
 
         private static void PopulateAddress(IEntityMetadata metadata, CvrAddressVocabulary vocabulary, Adresse address)
@@ -293,7 +275,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                     addressLine += " " + address.HusnummerFra;
                     if (!string.IsNullOrWhiteSpace(address.HusnummerTil.PrintIfAvailable()))
                     {
-                        if (address.HusnummerFra != address.HusnummerFra)
+                        if (address.HusnummerFra != address.HusnummerTil)
                             addressLine += $"-{address.HusnummerTil.PrintIfAvailable()}";
                     }
                 }
@@ -322,7 +304,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             var regex = new Regex(@"\<(html|head|body|div|span|img|p\>|a href)", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
             var isHtml = regex.IsMatch(response.Content);
 
-            string errorMessage = response.IsSuccessful ? string.Empty
+            var errorMessage = response.IsSuccessful ? string.Empty
                 : string.IsNullOrWhiteSpace(response.Content) || isHtml
                     ? $"{errorMessageBase} This could be due to breaking changes in the external system."
                     : $"{errorMessageBase} {response.Content}.";
@@ -330,13 +312,13 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             return new ConnectionVerificationResult(response.IsSuccessful, errorMessage);
         }
 
-        public IEnumerable<EntityType> Accepts(IDictionary<string, object> config, IProvider provider) => this.Accepts(config);
+        public IEnumerable<EntityType> Accepts(IDictionary<string, object> config, IProvider provider) => Accepts(config);
 
         private IEnumerable<EntityType> Accepts(IDictionary<string, object> config)
         {
             if (config.TryGetValue(Constants.KeyName.AcceptedEntityType, out var acceptedEntityTypeObj) && acceptedEntityTypeObj is string acceptedEntityType && !string.IsNullOrWhiteSpace(acceptedEntityType))
             {
-                return new EntityType[] { acceptedEntityType };
+                return [acceptedEntityType];
             }
 
             // Fallback to default accepted entity types
@@ -345,7 +327,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
 
         private bool Accepts(IDictionary<string, object> config, EntityType entityTypeToEvaluate)
         {
-            var configurableAcceptedEntityTypes = this.Accepts(config).ToArray();
+            var configurableAcceptedEntityTypes = Accepts(config).ToArray();
 
             return configurableAcceptedEntityTypes.Any(entityTypeToEvaluate.Is);
         }
@@ -359,8 +341,8 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         {
             var cvrExternalSearchJobData = new CvrExternalSearchJobData(config);
 
-            var identifier = query.QueryParameters.GetValue<string, HashSet<string>>(ExternalSearchQueryParameter.Identifier.ToString(), new HashSet<string>()).FirstOrDefault();
-            var name = query.QueryParameters.GetValue<string, HashSet<string>>(ExternalSearchQueryParameter.Name.ToString(), new HashSet<string>()).FirstOrDefault();
+            var identifier = query.QueryParameters.GetValue(ExternalSearchQueryParameter.Identifier.ToString(), []).FirstOrDefault();
+            var name = query.QueryParameters.GetValue(ExternalSearchQueryParameter.Name.ToString(), []).FirstOrDefault();
 
             var client = new CvrClient();
 
@@ -370,7 +352,8 @@ namespace CluedIn.ExternalSearch.Providers.CVR
 
                 if (response == null)
                     yield break;
-                else if (response.Organization != null)
+                
+                if (response.Organization != null)
                     yield return new ExternalSearchQueryResult<CvrResult>(query, response);
                 else if (response.ErrorException != null)
                     throw new AggregateException(response.ErrorException.Message, response.ErrorException);
@@ -386,25 +369,25 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                 if (response == null)
                     yield break;
 
-                if (response.Count() != 1)
+                var cvrResults = response.ToList();
+                if (cvrResults.Count != 1)
                     yield break;
 
-                foreach (var result in response)
+                foreach (var result in cvrResults)
                 {
                     if (result?.Organization != null)
                     {
                         yield return new ExternalSearchQueryResult<CvrResult>(query, result);
                         yield break;
                     }
-                    else if (result?.ErrorException != null)
+
+                    if (result?.ErrorException != null)
                         errors.Add(result.ErrorException);
                 }
 
                 if (errors.Any())
                     throw new AggregateException("Could not execute external search query", errors);
             }
-            else
-                yield break;
         }
 
         public IEnumerable<Clue> BuildClues(ExecutionContext context, IExternalSearchQuery query, IExternalSearchQueryResult result, IExternalSearchRequest request, IDictionary<string, object> config, IProvider provider)
@@ -420,15 +403,15 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                 }
             };
 
-            this.PopulateMetadata(clue.Data.EntityData, resultItem, request);
+            PopulateMetadata(clue.Data.EntityData, resultItem, request);
 
-            return new[] { clue };
+            return [clue];
         }
 
         public IEntityMetadata GetPrimaryEntityMetadata(ExecutionContext context, IExternalSearchQueryResult result, IExternalSearchRequest request, IDictionary<string, object> config, IProvider provider)
         {
             var resultItem = result.As<CvrResult>();
-            return this.CreateMetadata(resultItem, request);
+            return CreateMetadata(resultItem, request);
         }
 
         public IPreviewImage GetPrimaryEntityPreviewImage(ExecutionContext context, IExternalSearchQueryResult result, IExternalSearchRequest request, IDictionary<string, object> config, IProvider provider)
@@ -444,16 +427,16 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             var endpointLive = ConfigurationManager.AppSettings["Providers.ExternalSearch.CVR.LiveEndPoint"] ?? "http://CluedIn_CVR_I_SKYEN:cb4821e8-bee2-45fe-8b9d-27cd6c4eff66@distribution.virk.dk/cvr-permanent/_search";
             var endpoint = new Uri(endpointLive);
             var body =
-                JsonUtility.Serialize(new Body()
+                JsonUtility.Serialize(new Body
                 {
                     From = 0,
                     Size = 1,
-                    Query = new Query()
+                    Query = new Query
                     {
-                        QueryString = new QueryString()
+                        QueryString = new QueryString
                         {
                             Query = "28866984",
-                            Fields = new List<string> { "Vrvirksomhed.cvrNummer" }
+                            Fields = ["Vrvirksomhed.cvrNummer"]
                         }
                     }
                 }).Trim();
@@ -479,16 +462,21 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             }
 
             var searchByNameBody =
-            JsonUtility.Serialize(new Body()
+            JsonUtility.Serialize(new Body
             {
                 From = 0,
                 Size = 50,
-                Query = new Query()
+                Query = new Query
                 {
-                    QueryString = new QueryString()
+                    QueryString = new QueryString
                     {
                         Query = JsonConvert.ToString("Google"),
-                        Fields = new List<string>() { cvrExternalSearchJobData.OrgMatchPastNames ? "Vrvirksomhed.navne.navn" : "Vrvirksomhed.virksomhedMetadata.nyesteNavn.navn" }
+                        Fields =
+                        [
+                            cvrExternalSearchJobData.OrgMatchPastNames
+                                ? "Vrvirksomhed.navne.navn"
+                                : "Vrvirksomhed.virksomhedMetadata.nyesteNavn.navn"
+                        ]
                     }
                 }
             });

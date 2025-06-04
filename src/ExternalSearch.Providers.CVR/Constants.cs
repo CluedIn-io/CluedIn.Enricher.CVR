@@ -55,11 +55,11 @@ namespace CluedIn.ExternalSearch.Providers.CVR
         public static Version CluedInVersion => _cluedInVersion ??= typeof(Core.Constants).Assembly.GetName().Version;
         public static string EntityTypeLabel => CluedInVersion < new Version(4, 5, 0) ? "Entity Type" : "Business Domain";
 
-        public static AuthMethods AuthMethods { get; set; } = new AuthMethods
+        public static AuthMethods AuthMethods { get; set; } = new()
         {
-            Token = new List<Control>()
+            Token = new List<Control>
             {
-                new Control()
+                new()
                 {
                     DisplayName = $"Accepted {EntityTypeLabel}",
                     Type = "entityTypeSelector",
@@ -67,7 +67,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                     Name = KeyName.AcceptedEntityType,
                     Help = $"The {EntityTypeLabel.ToLower()} that defines the golden records you want to enrich (e.g., /Organization)."
                 },
-                new Control()
+                new()
                 {
                     DisplayName = "Organization Name Vocabulary Key",
                     Type = "vocabularyKeySelector",
@@ -75,7 +75,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                     Name = KeyName.OrgNameKey,
                     Help = "The vocabulary key that contains the names of companies you want to enrich (e.g., organization.name)."
                 },
-                new Control()
+                new()
                 {
                     DisplayName = "Organization Name normalization",
                     Type = "checkbox",
@@ -83,7 +83,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                     Name = KeyName.OrgNameNormalization,
                     Help = "Toggle to control the normalization of company names before searching the CVR register. Normalization removes trailing backslashes (\\), slashes (/), and vertical bars (|). Also, it changes the names to lowercase but will not affect names in CluedIn."
                 },
-                new Control()
+                new()
                 {
                     DisplayName = "Match Past Organization Names",
                     Type = "checkbox",
@@ -91,7 +91,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                     Name = KeyName.OrgMatchPastNames,
                     Help = "Toggle to control if the search text (organization name) should match the latest data or any historical records in the CVR register. When disabled, the search will only consider exact matches to the most recent organization name in the register."
                 },
-                new Control()
+                new()
                 {
                     DisplayName = "CVR Vocabulary Key",
                     Type = "vocabularyKeySelector",
@@ -99,7 +99,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                     Name = KeyName.CVRKey,
                     Help = "The vocabulary key that contains the CVR codes of companies you want to enrich (e.g., organization.cvrnumber)."
                 },
-                new Control()
+                new()
                 {
                     DisplayName = "Country Vocabulary Key",
                     Type = "vocabularyKeySelector",
@@ -107,7 +107,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                     Name = KeyName.CountryKey,
                     Help = "The vocabulary key that contains the countries of companies you want to enrich (e.g., organization.country)."
                 },
-                new Control()
+                new()
                 {
                     DisplayName = "Website Vocabulary Key",
                     Type = "vocabularyKeySelector",
@@ -118,7 +118,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             }
         };
 
-        public static IEnumerable<Control> Properties { get; set; } = new List<Control>()
+        public static IEnumerable<Control> Properties { get; set; } = new List<Control>
         {
             // NOTE: Leaving this commented as an example - BF
             //new()
@@ -130,7 +130,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             //}
         };
 
-        public static Guide Guide { get; set; } = new Guide
+        public static Guide Guide { get; set; } = new()
         {
             Instructions = Instruction
         };
