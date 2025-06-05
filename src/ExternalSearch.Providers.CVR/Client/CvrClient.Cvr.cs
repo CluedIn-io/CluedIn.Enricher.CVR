@@ -165,11 +165,11 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
 
             var response = client.Execute<CompanyResult>(request);
 
-            if (response.Data != null && response.Data.hits != null)
+            if (response.Data != null && response.Data?.hits != null)
             {
                 var json = JObject.Parse(response.Content);
 
-                return resultFunc(response.Data.hits.hits, response, json, name, matchPastNames);
+                return resultFunc(response.Data?.hits?.hits, response, json, name, matchPastNames);
             }
             else if (response.StatusCode == HttpStatusCode.NotFound)
                 return default(T);
@@ -207,7 +207,9 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
 
         private Result<CvrOrganization> CreateCompanyResult(Hit hit, IRestResponse<CompanyResult> response, JObject responseJson)
         {
-            var org                 = hit._source.Vrvirksomhed;
+            var org                 = hit?._source?.Vrvirksomhed;
+            if (org == null) return null;
+
             var vrvirksomhedNode    = this.GetOrganizationJsonToken(responseJson, org.cvrNummer);
             var lastUpdated         = this.GetLastUpdated(vrvirksomhedNode, org.cvrNummer);
 
