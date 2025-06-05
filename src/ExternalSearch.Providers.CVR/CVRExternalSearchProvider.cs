@@ -14,6 +14,7 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
+using AngleSharp.Text;
 using CluedIn.Core;
 using CluedIn.Core.Connectors;
 using CluedIn.Core.Data;
@@ -124,12 +125,19 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                     namePostFixFilter = _ => false;
             }
 
+            var conditions = new Dictionary<string, string>
+            {
+                { nameof(Constants.KeyName.OrgMatchPastNames), jobData.OrgMatchPastNames.ToString() }
+            };
+
             if (cvrNumber.Any())
             {
                 foreach (var value in cvrNumber.Where(v => !CvrFilter(v)))
                 {
-                    if (int.TryParse(value, out var result))
-                        yield return new ExternalSearchQuery(this, entityType, ExternalSearchQueryParameter.Identifier, result.ToString());
+                    if (!int.TryParse(value, out var result)) continue;
+                    
+                    conditions.Add(nameof(ExternalSearchQueryParameter.Identifier), result.ToString());
+                    yield return new ExternalSearchQuery(this, entityType, conditions);
                 }
             }
             else if (organizationName != null)
@@ -138,7 +146,8 @@ namespace CluedIn.ExternalSearch.Providers.CVR
 
                 foreach (var value in values)
                 {
-                    yield return new ExternalSearchQuery(this, entityType, ExternalSearchQueryParameter.Name, value);
+                    conditions.Add(nameof(ExternalSearchQueryParameter.Name), value);
+                    yield return new ExternalSearchQuery(this, entityType, conditions);
                 }
             }
         }
@@ -339,10 +348,23 @@ namespace CluedIn.ExternalSearch.Providers.CVR
 
         public IEnumerable<IExternalSearchQueryResult> ExecuteSearch(ExecutionContext context, IExternalSearchQuery query, IDictionary<string, object> config, IProvider provider)
         {
-            var cvrExternalSearchJobData = new CvrExternalSearchJobData(config);
+            var identifier = string.Empty;
+            if (query.QueryParameters.TryGetValue(nameof(ExternalSearchQueryParameter.Identifier), out var identifierValue))
+            {
+                identifier = identifierValue.First();
+            }
 
-            var identifier = query.QueryParameters.GetValue(ExternalSearchQueryParameter.Identifier.ToString(), []).FirstOrDefault();
-            var name = query.QueryParameters.GetValue(ExternalSearchQueryParameter.Name.ToString(), []).FirstOrDefault();
+            var name = string.Empty;
+            if (query.QueryParameters.TryGetValue(nameof(ExternalSearchQueryParameter.Name), out var nameValue))
+            {
+                name = nameValue.First();
+            }
+
+            var matchPastNames = false;
+            if (query.QueryParameters.TryGetValue(nameof(Constants.KeyName.OrgMatchPastNames), out var matchPastNamesValue))
+            {
+                matchPastNames = matchPastNamesValue.First().ToBoolean();
+            }
 
             var client = new CvrClient();
 
@@ -364,7 +386,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             {
                 var errors = new List<Exception>();
 
-                var response = client.GetCvrResultsByName(name, cvrExternalSearchJobData.OrgMatchPastNames);
+                var response = client.GetCvrResultsByName(name, matchPastNames);
 
                 if (response == null)
                     yield break;
