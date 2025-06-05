@@ -1,7 +1,5 @@
 ﻿using System.Collections.Generic;
-using System.Security.Cryptography;
 using CluedIn.Core.Crawling;
-using CluedIn.Core.Data.Relational;
 
 namespace CluedIn.ExternalSearch.Providers.CVR
 {
