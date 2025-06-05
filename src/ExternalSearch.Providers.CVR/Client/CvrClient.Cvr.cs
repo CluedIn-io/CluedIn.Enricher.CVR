@@ -164,6 +164,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
             var response = client.Execute<CompanyResult>(request);
 
             if (response.Data is { hits: not null })
+
             {
                 var json = JObject.Parse(response.Content);
 
