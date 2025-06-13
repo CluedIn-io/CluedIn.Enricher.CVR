@@ -15,7 +15,6 @@ using CluedIn.Providers.Models;
 using Constants = CluedIn.ExternalSearch.Providers.CVR.Constants;
 
 namespace CluedIn.Provider.ExternalSearch.CVR;
-
 public class CvrSearchProviderProvider : ProviderBase, IExtendedProviderMetadata, IExternalSearchProviderProvider
 {
     public IExternalSearchProvider ExternalSearchProvider { get; }
