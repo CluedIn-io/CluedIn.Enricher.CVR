@@ -1,44 +1,65 @@
 name: $(Date:yyyyMMdd)$(Rev:.r)
+parameters:
+  - name: runIntegrationTests
+    displayName: Run Integration Tests
+    type: boolean
+    default: false
+
+  - name: pipelineTemplateRef
+    displayName: Pipeline Template Ref
+    type: string
+    default: refs/heads/refactor
 
 trigger:
   branches:
     include:
-    - develop
-    - master
-    - release/*
+      - develop
+      - master
+      - release/*
 
-pr:
-  branches:
-    include:
-    - develop
-    - master
-    - release/*
+# Perform build for a PR to any branch, as if you run PR, you most likely want CI checks.
+pr: ["*"]
 
 resources:
   repositories:
     - repository: templates
       type: github
       name: CluedIn-io/AzurePipelines.Templates
-      endpoint: 'CluedIn-io'
-      ref: refs/heads/refactor
+      endpoint: "CluedIn-io"
+      ref: ${{ parameters.pipelineTemplateRef }}
 
 pool:
-  vmImage: 'windows-latest'
+  vmImage: "windows-latest"
 
 variables:
-  - group: nuget
   - name: testFolderPath
-    value: '$(Build.SourcesDirectory)/test'
+    value: "$(Build.SourcesDirectory)/test"
   - name: DOTNET_SKIP_FIRST_TIME_EXPERIENCE
     value: true
   - name: DOTNET_CLI_TELEMETRY_OPTOUT
     value: true
   - name: buildConfiguration
     value: Release
+  - name: system.debug
+    value: true
 
 steps:
+  - task: UseDotNet@2
+    displayName: Install .NET SDK 6.0
+    inputs:
+      version: 8.0.x
 
-- task: NuGetAuthenticate@0
-  displayName: 'Authenticate with nuget'
+  - task: NuGetAuthenticate@0
+    displayName: "Authenticate with nuget"
 
-- template: crawler.build.yml@templates
+  - template: crawler.build.yml@templates
+    parameters:
+      githubReleaseInMaster: true
+      publicReleaseForMaster: true
+      executeIntegrationTests: ${{ parameters.runIntegrationTests }}
+      createIntegrationEnvironmentScriptFilePath: "./build/integration-test.ps1"
+      createIntegrationEnvironmentScriptArguments: "-Action SetUp"
+      deleteIntegrationEnvironmentScriptFilePath: "./build/integration-test.ps1"
+      deleteIntegrationEnvironmentScriptArguments: "-Action TearDown"
+      publishCodeCoverage: true
+      useGitVersionDotNetTool: true

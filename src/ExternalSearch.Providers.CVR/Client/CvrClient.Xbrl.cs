@@ -5,7 +5,6 @@ using System.Net;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
-using CluedIn.Core;
 using CluedIn.ExternalSearch.Providers.CVR.Model;
 using CluedIn.ExternalSearch.Providers.CVR.Model.Xbrl;
 
@@ -25,11 +24,12 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
 
             var response = client.Execute<XbrlResponse>(request);
 
-            if (response.StatusCode == HttpStatusCode.Found || response.StatusCode == HttpStatusCode.OK)
+            switch (response.StatusCode)
             {
-                using (var stringReader = new StringReader(response.Content))
-                using (var reader = new XmlTextReader(stringReader))
+                case HttpStatusCode.Found or HttpStatusCode.OK:
                 {
+                    using var stringReader = new StringReader(response.Content);
+                    using var reader = new XmlTextReader(stringReader);
                     var doc = XDocument.Load(reader);
 
                     /*
@@ -51,71 +51,72 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
                      */
 
                     XNamespace defaultNs = "http://www.xbrl.org/2003/instance";
-                    XNamespace g         = "http://xbrl.dcca.dk/sob";
-                    XNamespace b         = "http://xbrl.dcca.dk/entryBalanceSheetAccountFormIncomeStatementByNature";
-                    XNamespace h         = "http://xbrl.dcca.dk/mrv";
-                    XNamespace f         = "http://xbrl.dcca.dk/arr";
-                    XNamespace d         = "http://xbrl.dcca.dk/cmn";
+                    //XNamespace g         = "http://xbrl.dcca.dk/sob";
+                    //XNamespace b         = "http://xbrl.dcca.dk/entryBalanceSheetAccountFormIncomeStatementByNature";
+                    //XNamespace h         = "http://xbrl.dcca.dk/mrv";
+                    //XNamespace f         = "http://xbrl.dcca.dk/arr";
+                    //XNamespace d         = "http://xbrl.dcca.dk/cmn";
                     XNamespace e         = "http://xbrl.dcca.dk/fsa";
                     XNamespace c         = "http://xbrl.dcca.dk/gsd";
-                    XNamespace xlink     = "http://www.w3.org/1999/xlink";
-                    XNamespace xbrli     = "http://www.xbrl.org/2003/instance";
-                    XNamespace iso4217   = "http://www.xbrl.org/2003/iso4217";
-                    XNamespace xbrldi    = "http://xbrl.org/2006/xbrldi";
-                    XNamespace link      = "http://www.xbrl.org/2003/linkbase";
-                    XNamespace xsi       = "http://www.w3.org/2001/XMLSchema-instance";
+                    //XNamespace xlink     = "http://www.w3.org/1999/xlink";
+                    //XNamespace xbrli     = "http://www.xbrl.org/2003/instance";
+                    //XNamespace iso4217   = "http://www.xbrl.org/2003/iso4217";
+                    //XNamespace xbrldi    = "http://xbrl.org/2006/xbrldi";
+                    //XNamespace link      = "http://www.xbrl.org/2003/linkbase";
+                    //XNamespace xsi       = "http://www.w3.org/2001/XMLSchema-instance";
 
                     var namespaceManager = new XmlNamespaceManager(reader.NameTable);
                     namespaceManager.AddNamespace("def", "http://www.xbrl.org/2003/instance");
                     namespaceManager.AddNamespace("e", "http://xbrl.dcca.dk/fsa");
                     namespaceManager.AddNamespace("c", "http://xbrl.dcca.dk/gsd");
 
-                    var contextElements = doc.Root.Elements(defaultNs + "context");
+                    var contextElements = doc.Root?.Elements(defaultNs + "context");
                     var contexts        = new Dictionary<string, string>();
 
-                    foreach (var element in contextElements)
+                    if (contextElements != null)
                     {
-                        var comment = element.PreviousNode as XComment;
+                        foreach (var element in contextElements)
+                        {
+                            if (element.PreviousNode is not XComment comment)
+                                continue;
 
-                        if (comment == null)
-                            continue;
-
-                        contexts[comment.Value.ToLower()] = element.Attribute("id").Value;
+                            contexts[comment.Value.ToLower()] = element.Attribute("id")?.Value;
+                        }
                     }
 
-                    XElement informationOnTypeOfSubmittedReport = doc.Root.Element(c + "InformationOnTypeOfSubmittedReport");
+                    var informationOnTypeOfSubmittedReport = doc.Root?.Element(c + "InformationOnTypeOfSubmittedReport");
 
                     string contextName;
 
                     if (informationOnTypeOfSubmittedReport != null && informationOnTypeOfSubmittedReport.Value == "Årsrapport")
-                        contextName = informationOnTypeOfSubmittedReport.Attribute("contextRef").Value;
+                        contextName = informationOnTypeOfSubmittedReport.Attribute("contextRef")?.Value;
                     else
                         contexts.TryGetValue("aktuelle periode enkelt selskab", out contextName);
 
                     contexts.TryGetValue("slutdato aktuelle periode enkelt selskab", out var endPeriodContext);
 
-                    XElement reportingPeriodEndDateElement  = doc.Root.Element(c + "ReportingPeriodEndDate");
-                    XElement dateOfApprovalOfReportElement  = doc.Root.Element(c + "DateOfApprovalOfReport");
+                    var reportingPeriodEndDateElement  = doc.Root?.Element(c + "ReportingPeriodEndDate");
+                    var dateOfApprovalOfReportElement  = doc.Root?.Element(c + "DateOfApprovalOfReport");
 
                     // Resultat før skat
-                    XElement profitLossFromOrdinaryActivitiesBeforeTax = doc.Root.Element(e + "ProfitLossFromOrdinaryActivitiesBeforeTax");
+                    var profitLossFromOrdinaryActivitiesBeforeTax = doc.Root?.Element(e + "ProfitLossFromOrdinaryActivitiesBeforeTax");
 
                     // Bruttofortjeneste 
-                    XElement grossProfitLoss = doc.Root.Element(e + "GrossProfitLoss");
+                    var grossProfitLoss = doc.Root?.Element(e + "GrossProfitLoss");
 
                     // Årets resultat
-                    XElement profitLoss = doc.Root.XPathSelectElement("e:ProfitLoss[@contextRef = '" + contextName + "']", namespaceManager);
+                    var profitLoss = doc.Root.XPathSelectElement("e:ProfitLoss[@contextRef = '" + contextName + "']", namespaceManager);
 
                     // Egenkapital
-                    XElement equity = doc.Root.XPathSelectElement("e:Equity[@contextRef = '" + endPeriodContext + "']", namespaceManager);
+                    var equity = doc.Root.XPathSelectElement("e:Equity[@contextRef = '" + endPeriodContext + "']", namespaceManager);
 
                     // Balance
-                    XElement liabilitiesAndEquity = doc.Root.XPathSelectElement("e:LiabilitiesAndEquity[@contextRef = '" + endPeriodContext + "']", namespaceManager);
+                    var liabilitiesAndEquity = doc.Root.XPathSelectElement("e:LiabilitiesAndEquity[@contextRef = '" + endPeriodContext + "']", namespaceManager);
 
                     var report = new FinancialReportSummary();
 
-                    DateTimeOffset reportingPeriodEndDate = DateTimeOffset.MinValue;
-                    DateTimeOffset dateOfApprovalOfReport = DateTimeOffset.MinValue;
+                    var reportingPeriodEndDate = DateTimeOffset.MinValue;
+                    var dateOfApprovalOfReport = DateTimeOffset.MinValue;
 
                     if (reportingPeriodEndDateElement != null)
                         DateTimeOffset.TryParse(reportingPeriodEndDateElement.Value, out reportingPeriodEndDate);
@@ -123,21 +124,22 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
                     if (dateOfApprovalOfReportElement != null)
                         DateTimeOffset.TryParse(dateOfApprovalOfReportElement.Value, out dateOfApprovalOfReport);
 
-                    report.ProfitLossFromOrdinaryActivitiesBeforeTax    = this.GetAmount(profitLossFromOrdinaryActivitiesBeforeTax, namespaceManager);
-                    report.GrossProfitLoss                              = this.GetAmount(grossProfitLoss, namespaceManager);
-                    report.ProfitLoss                                   = this.GetAmount(profitLoss, namespaceManager);
-                    report.Equity                                       = this.GetAmount(equity, namespaceManager);
-                    report.LiabilitiesAndEquity                         = this.GetAmount(liabilitiesAndEquity, namespaceManager);
-                    report.Year                                         = reportingPeriodEndDate != DateTimeOffset.MinValue ? (int?)reportingPeriodEndDate.Year : null;
-                    report.DateOfApprovalOfReport                       = dateOfApprovalOfReport != DateTimeOffset.MinValue ? (DateTimeOffset?)dateOfApprovalOfReport : null;
+                    report.ProfitLossFromOrdinaryActivitiesBeforeTax    = GetAmount(profitLossFromOrdinaryActivitiesBeforeTax, namespaceManager);
+                    report.GrossProfitLoss                              = GetAmount(grossProfitLoss, namespaceManager);
+                    report.ProfitLoss                                   = GetAmount(profitLoss, namespaceManager);
+                    report.Equity                                       = GetAmount(equity, namespaceManager);
+                    report.LiabilitiesAndEquity                         = GetAmount(liabilitiesAndEquity, namespaceManager);
+                    report.Year                                         = reportingPeriodEndDate != DateTimeOffset.MinValue ? reportingPeriodEndDate.Year : null;
+                    report.DateOfApprovalOfReport                       = dateOfApprovalOfReport != DateTimeOffset.MinValue ? dateOfApprovalOfReport : null;
 
                     return new Result<FinancialReportSummary>(response.Content, report);
                 }
+                case HttpStatusCode.NotFound:
+                    return null;
+                default:
+                    throw new Exception(
+                        $"Could not get xbrl report - StatusCode: {response.StatusCode}; Message: {response.ErrorMessage}");
             }
-            else if (response.StatusCode == HttpStatusCode.NotFound)
-                return null;
-            else
-                throw new Exception(string.Format("Could not get xbrl report - StatusCode: {0}; Message: {1}", response.StatusCode, response.ErrorMessage));
         }
 
         private Amount GetAmount(XElement value, XmlNamespaceManager namespaceManager)
@@ -146,19 +148,19 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
                 return null;
 
             var v        = value.Value;
-            var unitRef  = value.Attribute("unitRef").Value;
+            var unitRef  = value.Attribute("unitRef")?.Value;
 
-            string decimals = "0";
+            var decimals = "0";
             if (value.Attribute("decimals") != null)
-                decimals = value.Attribute("decimals").Value;
+                decimals = value.Attribute("decimals")?.Value;
 
-            var measure = value.Document.Root.XPathSelectElement("def:unit[@id = '" + unitRef + "']/def:measure", namespaceManager);
+            var measure = value.Document?.Root?.XPathSelectElement("def:unit[@id = '" + unitRef + "']/def:measure", namespaceManager);
 
-            return new Amount()
+            return new Amount
                        {
                            Value = long.Parse(v),
-                           Decimals = int.Parse(decimals),
-                           Unit = measure.Value
+                           Decimals = int.Parse(decimals ?? "0"),
+                           Unit = measure?.Value
                        };
         }
     }

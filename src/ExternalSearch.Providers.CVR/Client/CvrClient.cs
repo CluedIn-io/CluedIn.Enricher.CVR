@@ -42,12 +42,12 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
 
             foreach (var organization in organizations)
             {
-                var result = new CvrResult(organization.Data.CvrNumber);
+                var result = new CvrResult(organization?.Data?.CvrNumber ?? 0);
 
                 try
                 {
-                    result.RawCvrResult = organization.RawContent;
-                    result.Organization = organization.Data;
+                    result.RawCvrResult = organization?.RawContent;
+                    result.Organization = organization?.Data;
 
                     result = this.GetAdditionalData(result);
                 }
@@ -62,9 +62,11 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
 
         private CvrResult GetAdditionalData(CvrResult result)
         {
-            int cvrNumber = result.Organization.CvrNumber;
+            if (result?.Organization == null || result.Organization.CvrNumber == 0) return null;
 
-            var financialReport = ActionExtensions.ExecuteWithRetry(() => this.GetFinancialYearlyReport(cvrNumber), isTransient: ex => ex.IsTransient());
+            var cvrNumber = result.Organization.CvrNumber;
+
+            var financialReport = ActionExtensions.ExecuteWithRetry(() => GetFinancialYearlyReport(cvrNumber), isTransient: ex => ex.IsTransient());
 
             if (financialReport == null)
                 return result;
@@ -74,16 +76,18 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
 
             var document = financialReport.Data.Dokumenter.FirstOrDefault(d => d.DokumentType == "AARSRAPPORT" && d.DokumentMimeType == "application/xml");
 
-            if (document != null)
-            {
-                try
-                {
-                    var xbrlReport = ActionExtensions.ExecuteWithRetry(() => this.GetXbrlReport(document.DokumentUrl), isTransient: ex => ex.IsTransient());
+            if (document == null) return result;
 
-                    result.RawXbrl                  = xbrlReport.RawContent;
-                    result.FinancialReportSummary   = xbrlReport.Data;
-                }
-                catch { }
+            try
+            {
+                var xbrlReport = ActionExtensions.ExecuteWithRetry(() => GetXbrlReport(document.DokumentUrl), isTransient: ex => ex.IsTransient());
+
+                result.RawXbrl                  = xbrlReport.RawContent;
+                result.FinancialReportSummary   = xbrlReport.Data;
+            }
+            catch (Exception ex)
+            {
+                result.ErrorException = ex;
             }
 
             return result;
