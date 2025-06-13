@@ -118,4 +118,8 @@ public class CvrSearchProviderProvider : ProviderBase, IExtendedProviderMetadata
     public IEnumerable<Control> Properties { get; } = Constants.Properties;
     public Guide Guide { get; } = Constants.Guide;
     public new IntegrationType Type { get; } = Constants.IntegrationType;
+    public Dictionary<string, HashSet<string>> ValidRequiredFieldConfigurationCombinations => new() {
+        { "CVR", [Constants.KeyName.CVRKey] },
+        { "Organization Name, Country and Website", [Constants.KeyName.OrgNameKey, Constants.KeyName.CountryKey, Constants.KeyName.WebsiteKey] }
+    };
 }
