@@ -2,7 +2,7 @@
   <PropertyGroup Label="Dependency Versions">
     <_ComponentHost>3.2.1</_ComponentHost>
     <_AutoFixture>4.11.0</_AutoFixture>
-    <_CluedIn>4.5.0-alpha.0.pr7131.242</_CluedIn>
+    <_CluedIn>4.6.0-alpha.*</_CluedIn>
   </PropertyGroup>
   <ItemGroup>
     <!--
