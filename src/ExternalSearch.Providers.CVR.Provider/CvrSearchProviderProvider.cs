@@ -134,4 +134,10 @@ public class CvrSearchProviderProvider : ProviderBase, IExtendedProviderMetadata
         { "autoSubmission", false },
         { "dataSourceSetId", string.Empty },
     };
+
+    public Dictionary<string, HashSet<string>> ValidRequiredFieldConfigurationCombinations => new() 
+    {
+        { "CVR", [Constants.KeyName.CVRKey] },
+        { "Organization Name, Country and Website", [Constants.KeyName.OrgNameKey, Constants.KeyName.CountryKey, Constants.KeyName.WebsiteKey] }
+    };
 }
