@@ -10,6 +10,7 @@ using CluedIn.Core.Providers;
 using CluedIn.Core.Webhooks;
 using CluedIn.ExternalSearch;
 using CluedIn.ExternalSearch.Providers.CVR;
+using CluedIn.ExternalSearch.Providers.CVR.Vocabularies;
 using CluedIn.Providers.Models;
 using Constants = CluedIn.ExternalSearch.Providers.CVR.Constants;
 
@@ -118,4 +119,25 @@ public class CvrSearchProviderProvider : ProviderBase, IExtendedProviderMetadata
     public IEnumerable<Control> Properties { get; } = Constants.Properties;
     public Guide Guide { get; } = Constants.Guide;
     public new IntegrationType Type { get; } = Constants.IntegrationType;
+    public bool SupportsEnricherV2 => true;
+    public Dictionary<string, object> ExtraInfo { get; } = new()
+    {
+        { "autoMap", true },
+        { "useEnricherOriginEntityCode", true },
+        { "supportConfidenceScore", false }, // for UI
+        { "minConfidenceScore", 0 }, // for UI
+        { "maxConfidenceScore", 100 }, // for UI
+        { "origin", Constants.ProviderName.ToCamelCase() },
+        { "originField", string.Empty },
+        { "nameKeyField", Constants.KeyName.OrgNameKey },
+        { "vocabKeyPrefix", CvrVocabulary.Organization.KeyPrefix},
+        { "autoSubmission", false },
+        { "dataSourceSetId", string.Empty },
+    };
+
+    public Dictionary<string, HashSet<string>> ValidRequiredFieldConfigurationCombinations => new() 
+    {
+        { "CVR", [Constants.KeyName.CVRKey] },
+        { "Organization Name, Country and Website", [Constants.KeyName.OrgNameKey, Constants.KeyName.CountryKey, Constants.KeyName.WebsiteKey] }
+    };
 }
