@@ -7,13 +7,6 @@
 // </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
-using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Globalization;
-using System.Linq;
-using System.Net;
-using System.Text.RegularExpressions;
 using AngleSharp.Text;
 using CluedIn.Core;
 using CluedIn.Core.Connectors;
@@ -33,6 +26,13 @@ using CluedIn.ExternalSearch.Providers.CVR.Vocabularies;
 using CluedIn.Processing.EntityResolution;
 using Newtonsoft.Json;
 using RestSharp;
+using System;
+using System.Collections.Generic;
+using System.Configuration;
+using System.Globalization;
+using System.Linq;
+using System.Net;
+using System.Text.RegularExpressions;
 using EntityType = CluedIn.Core.Data.EntityType;
 
 namespace CluedIn.ExternalSearch.Providers.CVR
@@ -81,8 +81,8 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             var postFixes = new[] { "A/S", "AS", "ApS", "IVS", "I/S", "IS", "K/S", "KS", "G/S", "GS", "P/S", "PS", "Enkeltmandsvirksomhed", "Forening", "Partsrederi", "Selskab", "virksomhed" }.Select(v => v.ToLowerInvariant()).ToHashSet();
             var contains  = new[] { " dk", "dk ", "denmark", "danmark", "dansk", "æ", "ø", "å" }.Select(v => v.ToLowerInvariant()).ToHashSet();
 
-            bool CvrFilter(string value) => existingResults.Any(r => string.Equals(r.Data.CvrNumber.ToString(CultureInfo.InvariantCulture), value, StringComparison.InvariantCultureIgnoreCase));
-            bool NameFilter(string value) => OrganizationFilters.NameFilter(context, value);
+            bool existingCvrDataFilter(string value) => existingResults.Any(r => string.Equals(r.Data.CvrNumber.ToString(CultureInfo.InvariantCulture), value, StringComparison.InvariantCultureIgnoreCase));
+            bool nameFilter(string value) => OrganizationFilters.NameFilter(context, value);
             Func<string, bool> namePostFixFilter    = value =>
                 {
                     value = value.ToLowerInvariant();
@@ -104,6 +104,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
 
             // Query Input
             var entityType          = request.EntityMetaData.EntityType;
+            var entityName = !string.IsNullOrEmpty(request.EntityMetaData.Name) ? request.EntityMetaData.Name : request.EntityMetaData.DisplayName;
 
             var cvrNumber = GetValue(request, config, Constants.KeyName.CVRKey, Core.Data.Vocabularies.Vocabularies.CluedInOrganization.CodesCVR);
             var organizationName = GetValue(request, config, Constants.KeyName.OrgNameKey, Core.Data.Vocabularies.Vocabularies.CluedInOrganization.OrganizationName);
@@ -130,25 +131,44 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                 { nameof(Constants.KeyName.OrgMatchPastNames), jobData.OrgMatchPastNames.ToString() }
             };
 
+            var queriesGenerated = false;
             if (cvrNumber.Any())
             {
-                foreach (var value in cvrNumber.Where(v => !CvrFilter(v)))
+                foreach (var value in cvrNumber.Where(v => !existingCvrDataFilter(v)))
                 {
                     if (!int.TryParse(value, out var result)) continue;
-                    
+
                     conditions.Add(nameof(ExternalSearchQueryParameter.Identifier), result.ToString());
+                    queriesGenerated = true;
                     yield return new ExternalSearchQuery(this, entityType, conditions);
                 }
             }
             else if (organizationName != null)
             {
-                var values = jobData.OrgNameNormalization ? organizationName.Select(NameNormalization.Normalize).ToHashSet().Where(v => !NameFilter(v) && !namePostFixFilter(v)) : organizationName;
+                var values = jobData.OrgNameNormalization ? organizationName.Select(NameNormalization.Normalize).ToHashSet().Where(v => !nameFilter(v) && !namePostFixFilter(v)) : organizationName;
 
                 foreach (var value in values)
                 {
                     conditions.Add(nameof(ExternalSearchQueryParameter.Name), value);
+                    queriesGenerated = true;
                     yield return new ExternalSearchQuery(this, entityType, conditions);
                 }
+            }
+
+            // Throw error when queries not generated
+            ThrowExceptions(queriesGenerated, cvrNumber, organizationName, entityName, jobData);
+        }
+
+        private static void ThrowExceptions(bool queriesGenerated, HashSet<string> cvrNumber, HashSet<string> organizationName, string entityName, CvrExternalSearchJobData jobData)
+        {
+            switch (queriesGenerated)
+            {
+                case false when !string.IsNullOrWhiteSpace(jobData.CVRKey) && string.IsNullOrWhiteSpace(jobData.OrgNameKey) && !cvrNumber.Any():
+                    throw new Exception($"Unable to generate queries for {entityName}. CVR number is empty.");
+                case false when !cvrNumber.Any() && organizationName.Any():
+                    throw new Exception($"Unable to generate queries for {entityName}. Name must include a Danish company suffix or keyword, or the website/country must indicate Denmark. Please refer to https://documentation.cluedin.net/preparation/enricher/cvr.");
+                case false when !cvrNumber.Any() && !organizationName.Any():
+                    throw new Exception($"Unable to generate queries for {entityName}. Both CVR number and name are empty.");
             }
         }
 
@@ -373,8 +393,8 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                 var response = client.GetCvrResult(int.Parse(identifier));
 
                 if (response == null)
-                    yield break;
-                
+                    throw new ApplicationException("Unable to get results by CVR number.");
+
                 if (response.Organization != null)
                     yield return new ExternalSearchQueryResult<CvrResult>(query, response);
                 else if (response.ErrorException != null)
@@ -389,11 +409,11 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                 var response = client.GetCvrResultsByName(name, matchPastNames);
 
                 if (response == null)
-                    yield break;
+                    throw new ApplicationException("Unable to get results by name.");
 
                 var cvrResults = response.ToList();
                 if (cvrResults.Count != 1)
-                    yield break;
+                    throw new ApplicationException("More than one results returned.");
 
                 foreach (var result in cvrResults)
                 {
