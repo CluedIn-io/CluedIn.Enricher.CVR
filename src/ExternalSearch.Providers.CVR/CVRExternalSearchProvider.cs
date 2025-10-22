@@ -393,7 +393,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                 var response = client.GetCvrResult(int.Parse(identifier));
 
                 if (response == null)
-                    throw new ApplicationException("Unable to get results by CVR number.");
+                    throw new ApplicationException("Unable to get result by CVR number.");
 
                 if (response.Organization != null)
                     yield return new ExternalSearchQueryResult<CvrResult>(query, response);
@@ -409,11 +409,11 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                 var response = client.GetCvrResultsByName(name, matchPastNames);
 
                 if (response == null)
-                    throw new ApplicationException("Unable to get results by name.");
+                    throw new ApplicationException("Unable to get result by name.");
 
                 var cvrResults = response.ToList();
                 if (cvrResults.Count != 1)
-                    throw new ApplicationException("More than one results returned.");
+                    throw new ApplicationException("More than one result returned.");
 
                 foreach (var result in cvrResults)
                 {
