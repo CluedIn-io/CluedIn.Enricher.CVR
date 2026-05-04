@@ -2,14 +2,16 @@
 
 using System.Diagnostics.CodeAnalysis;
 using Nager.PublicSuffix;
+using Nager.PublicSuffix.Exceptions;
+using Nager.PublicSuffix.RuleProviders;
 
 namespace CluedIn.ExternalSearch.Providers.CVR.Net;
 
 internal static class DomainName
 {
-    private static readonly DomainParser domainParser = new(new WebTldRuleProvider());
+    private static readonly DomainParser domainParser = new(new SimpleHttpRuleProvider());
 
-    public static bool TryParse(string domain, [NotNullWhen(true)]out DomainInfo? domainInfo)
+    public static bool TryParse(string domain, [NotNullWhen(true)] out DomainInfo? domainInfo)
     {
         try
         {

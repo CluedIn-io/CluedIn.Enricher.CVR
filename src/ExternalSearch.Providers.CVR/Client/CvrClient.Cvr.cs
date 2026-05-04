@@ -134,7 +134,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
             );
         }
 
-        private IEnumerable<Result<CvrOrganization>> BuildHits(IEnumerable<Hit> hits, IRestResponse<CompanyResult> response, JObject json, string name, bool matchPastNames)
+        private IEnumerable<Result<CvrOrganization>> BuildHits(IEnumerable<Hit> hits, RestResponse<CompanyResult> response, JObject json, string name, bool matchPastNames)
         {
             if (hits == null || string.IsNullOrEmpty(name)) yield break;
 
@@ -143,19 +143,19 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
             yield return CreateCompanyResult(hit, json);
         }
 
-        private T GetCompanyResult<T>(string queryBody, Uri endPoint, Func<IEnumerable<Hit>, IRestResponse<CompanyResult>, JObject, string, bool, T> resultFunc, string name, bool matchPastNames)
+        private T GetCompanyResult<T>(string queryBody, Uri endPoint, Func<IEnumerable<Hit>, RestResponse<CompanyResult>, JObject, string, bool, T> resultFunc, string name, bool matchPastNames)
         {
-            var client = new RestClient(endPoint);
-
-            var request = new RestRequest(Method.POST);
-
             var userInfo = endPoint.UserInfo;
+            NetworkCredential credentials = null;
             if (!string.IsNullOrEmpty(userInfo))
             {
                 var parts = userInfo.Split(':');
-
-                request.Credentials = new NetworkCredential(parts[0], parts[1]);
+                credentials = new NetworkCredential(parts[0], parts[1]);
             }
+
+            var client = new RestClient(new RestClientOptions(endPoint) { Credentials = credentials });
+
+            var request = new RestRequest { Method = Method.Post };
 
             var body = queryBody.Trim();
 
