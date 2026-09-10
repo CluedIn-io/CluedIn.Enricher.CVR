@@ -154,7 +154,10 @@ wasn't the cause here, but worth ruling out explicitly rather than assuming).
 
 ## Step 7 — Push and confirm CI
 
-Status: *(updated after pushing)*
+Status: **Done**
+
+Fully green on the first push (PR #45, build 151979) — all three `Multi-version build+test` legs,
+all three `Integration tests` legs, and `Multi-version: publish` passed.
 
 ---
 
@@ -167,3 +170,4 @@ Status: *(updated after pushing)*
 - [x] Test projects — `test/Directory.Build.props` stripped; dead `test/unit/Directory.Build.props` deleted; conditional xunit v2/v3 wired into the integration test csproj; real `dotnet test` passes (skipped, not failed) on both 4.7.0/net6.0 and 5.0.0-beta.*/net10.0
 - [x] Source — RestSharp 106-vs-114 break fixed via new `RestSharpCompat.cs`; `Nager.PublicSuffix` 2.4.0-vs-3.8.0 break fixed in `DomainName.cs`; all `src/` projects build 0 errors on all three legs
 - [x] `GitVersion.yml` — duplicate `ignore:` key bug found and fixed; resolves to real `1.0.0`, verified with pinned GitVersion.Tool 5.9.0
+- [x] Pushed and confirmed CI green end-to-end — PR #45, build 151979, all legs + publish passed on the first run
