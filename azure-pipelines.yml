@@ -3,12 +3,21 @@ parameters:
   - name: runIntegrationTests
     displayName: Run Integration Tests
     type: boolean
-    default: false
+    default: true
 
   - name: pipelineTemplateRef
     displayName: Pipeline Template Ref
     type: string
-    default: refs/heads/refactor
+    default: refs/heads/feature/multi-version-packaging
+
+  # Manual, one-off check that this repo still builds and tests cleanly against a CluedIn.Core
+  # version outside multiVersionCluedInTargets below (e.g. a new release, to see if retargeting is
+  # needed) - leave blank for a normal run. Its target framework is auto-detected, not supplied
+  # here.
+  - name: probeCluedInVersion
+    displayName: Probe CluedIn Version (leave blank for a normal run)
+    type: string
+    default: ""
 
 trigger:
   branches:
@@ -28,9 +37,6 @@ resources:
       endpoint: "CluedIn-io"
       ref: ${{ parameters.pipelineTemplateRef }}
 
-pool:
-  vmImage: "windows-latest"
-
 variables:
   - name: testFolderPath
     value: "$(Build.SourcesDirectory)/test"
@@ -43,23 +49,27 @@ variables:
   - name: system.debug
     value: true
 
-steps:
-  - task: UseDotNet@2
-    displayName: Install .NET SDK 6.0
-    inputs:
-      version: 8.0.x
-
-  - task: NuGetAuthenticate@0
-    displayName: "Authenticate with nuget"
-
-  - template: crawler.build.yml@templates
+# jobs:, not pool:/steps: - crawler.build.jobs.yml is a jobs template, the only one with
+# multi-version support (crawler.build.yml has none).
+jobs:
+  - template: crawler.build.jobs.yml@templates
     parameters:
+      pool:
+        vmImage: "ubuntu-22.04"
       githubReleaseInMaster: true
       publicReleaseForMaster: true
-      executeIntegrationTests: ${{ parameters.runIntegrationTests }}
-      createIntegrationEnvironmentScriptFilePath: "./build/integration-test.ps1"
-      createIntegrationEnvironmentScriptArguments: "-Action SetUp"
-      deleteIntegrationEnvironmentScriptFilePath: "./build/integration-test.ps1"
-      deleteIntegrationEnvironmentScriptArguments: "-Action TearDown"
       publishCodeCoverage: true
       useGitVersionDotNetTool: true
+      probeCluedInVersion: ${{ parameters.probeCluedInVersion }}
+      executeIntegrationTests: ${{ parameters.runIntegrationTests }}
+      # createIntegrationEnvironmentScriptFilePath deliberately omitted - ./build/integration-test.ps1
+      # never existed in this repo; the one non-skipped-by-default integration test project has no
+      # external environment dependency (everything goes through CluedIn.Testing.Base's in-process
+      # mocks).
+      # CluedIn 4.7.0/4.8.0 are net6.0; 5.0.0-beta.* floats to whatever prerelease is newest in the
+      # develop feed. 4.6.0 excluded - no evidence this repo's small ExternalSearch provider surface
+      # needs it.
+      multiVersionCluedInTargets:
+        - cluedInVersion: "4.7.0"
+        - cluedInVersion: "4.8.0"
+        - cluedInVersion: "5.0.0-beta.*"

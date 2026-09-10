@@ -14,6 +14,12 @@ using Newtonsoft.Json.Linq;
 
 using RestSharp;
 
+#if CLUEDIN_V50
+using CvrCompanyResponse = RestSharp.RestResponse<CluedIn.ExternalSearch.Providers.CVR.Model.Cvr.CompanyResult>;
+#else
+using CvrCompanyResponse = RestSharp.IRestResponse<CluedIn.ExternalSearch.Providers.CVR.Model.Cvr.CompanyResult>;
+#endif
+
 namespace CluedIn.ExternalSearch.Providers.CVR.Client
 {
     public partial class CvrClient
@@ -134,7 +140,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
             );
         }
 
-        private IEnumerable<Result<CvrOrganization>> BuildHits(IEnumerable<Hit> hits, RestResponse<CompanyResult> response, JObject json, string name, bool matchPastNames)
+        private IEnumerable<Result<CvrOrganization>> BuildHits(IEnumerable<Hit> hits, CvrCompanyResponse response, JObject json, string name, bool matchPastNames)
         {
             if (hits == null || string.IsNullOrEmpty(name)) yield break;
 
@@ -143,7 +149,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
             yield return CreateCompanyResult(hit, json);
         }
 
-        private T GetCompanyResult<T>(string queryBody, Uri endPoint, Func<IEnumerable<Hit>, RestResponse<CompanyResult>, JObject, string, bool, T> resultFunc, string name, bool matchPastNames)
+        private T GetCompanyResult<T>(string queryBody, Uri endPoint, Func<IEnumerable<Hit>, CvrCompanyResponse, JObject, string, bool, T> resultFunc, string name, bool matchPastNames)
         {
             var userInfo = endPoint.UserInfo;
             NetworkCredential credentials = null;
@@ -153,9 +159,9 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
                 credentials = new NetworkCredential(parts[0], parts[1]);
             }
 
-            var client = new RestClient(new RestClientOptions(endPoint) { Credentials = credentials });
+            var client = RestSharpCompat.CreateClient(endPoint, credentials);
 
-            var request = new RestRequest { Method = Method.Post };
+            var request = new RestRequest { Method = RestSharpCompat.HttpPost };
 
             var body = queryBody.Trim();
 

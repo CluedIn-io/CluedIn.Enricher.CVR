@@ -1,5 +1,8 @@
 mode: ContinuousDeployment
-next-version: 5.0
+# The CluedIn version is now encoded in the published package suffix (e.g. .470/.480/.500), so this
+# repo's own version no longer needs to track CluedIn. Reset to 1.0. commits-before is padded well
+# past the highest pre-existing tag (4.6.2, 2026-06-17T17:22:21+10:00).
+next-version: 1.0
 branches:
   master:
     mode: ContinuousDelivery
@@ -26,4 +29,5 @@ branches:
     - develop
 ignore:
   sha: []
+  commits-before: 2026-08-01T00:00:00
 

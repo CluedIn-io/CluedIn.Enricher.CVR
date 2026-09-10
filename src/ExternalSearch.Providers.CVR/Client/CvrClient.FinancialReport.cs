@@ -14,7 +14,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
         public Result<Offentliggoerelse> GetFinancialYearlyReport(int cvrNumber)
         {
             var client  = new RestClient("http://distribution.virk.dk/offentliggoerelser/_search");
-            var request = new RestRequest { Method = Method.Post };
+            var request = new RestRequest { Method = RestSharpCompat.HttpPost };
 
             var body = $$$"""
                             { "from" : 0, "size" : 1,
