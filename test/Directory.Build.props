@@ -5,12 +5,13 @@
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 
+  <!-- No unconditional xunit/AutoFixture PackageReferences here - package selection is done per
+       test csproj (see ExternalSearch.CVR.Integration.Tests.csproj) so the CLUEDIN_V50 condition
+       can differ between build legs. An unconditional xunit v3 reference here would clash
+       (CS0433) with a conditional xunit v2 ItemGroup added in a consuming csproj. -->
   <ItemGroup>
-    <PackageReference Include="AutoFixture.Xunit3" />
     <PackageReference Include="coverlet.msbuild" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="xunit.v3" />
-    <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="Moq" />
   </ItemGroup>
 </Project>

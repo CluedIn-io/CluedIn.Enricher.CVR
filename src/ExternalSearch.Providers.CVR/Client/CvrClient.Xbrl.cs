@@ -20,7 +20,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
             // sitecore danmark - "http://regnskaber.virk.dk/46897513/ZG9rdW1lbnRsYWdlcjovLzAzLzJmLzM1L2MxLzIzL2E4ZmMtNDRhNC05ZTU0LWJlZDc3NTI5MmZhYw.xml"
 
             var client  = new RestClient(url);
-            var request = new RestRequest { Method = Method.Get };
+            var request = new RestRequest { Method = RestSharpCompat.HttpGet };
 
             var response = client.Execute<XbrlResponse>(request);
 

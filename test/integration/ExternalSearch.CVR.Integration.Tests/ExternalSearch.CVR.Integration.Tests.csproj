@@ -1,7 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <PackageReference Include="CluedIn.CrawlerIntegrationTesting" />
-    <PackageReference Include="CluedIn.Testing.Base" />
+    <PackageReference Include="CluedIn.CrawlerIntegrationTesting.$(_CluedInPackageSuffix)" />
+    <PackageReference Include="CluedIn.Testing.Base.$(_CluedInPackageSuffix)" />
+  </ItemGroup>
+  <!-- xunit v3 + AutoFixture.Xunit3 for net10.0 (CluedIn 5.0+) -->
+  <ItemGroup Condition="$(DefineConstants.Contains('CLUEDIN_V50'))">
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="AutoFixture.Xunit3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+  <!-- xunit v2 + AutoFixture.Xunit2 for net6.0 (CluedIn < 5.0) -->
+  <ItemGroup Condition="!$(DefineConstants.Contains('CLUEDIN_V50'))">
+    <PackageReference Include="xunit" />
+    <PackageReference Include="AutoFixture.Xunit2" />
+    <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\ExternalSearch.Providers.CVR\ExternalSearch.Providers.CVR.csproj" />
