@@ -173,7 +173,9 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
             request.AddParameter("application/json", body, ParameterType.RequestBody);
 
             var response = client.Execute(request);
-            var responseData = JsonConvert.DeserializeObject<CompanyResult>(response.Content, ResponseJsonSettings);
+var responseData = response.IsSuccessful
+                ? JsonConvert.DeserializeObject<CompanyResult>(response.Content, ResponseJsonSettings)
+                : null;
 
             if (responseData is { hits: not null })
             {
