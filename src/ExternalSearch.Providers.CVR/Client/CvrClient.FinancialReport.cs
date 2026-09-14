@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Net;
 
 using CluedIn.ExternalSearch.Providers.CVR.Model;
 using CluedIn.ExternalSearch.Providers.CVR.Model.Xbrl;
 
+using Newtonsoft.Json;
 using RestSharp;
 
 namespace CluedIn.ExternalSearch.Providers.CVR.Client
@@ -13,34 +14,36 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
     {
         public Result<Offentliggoerelse> GetFinancialYearlyReport(int cvrNumber)
         {
-            var client  = new RestClient("http://distribution.virk.dk/offentliggoerelser/_search");
+            var client = new RestClient("http://distribution.virk.dk/offentliggoerelser/_search");
             var request = new RestRequest { Method = RestSharpCompat.HttpPost };
 
-            var body = $$$"""
-                            { "from" : 0, "size" : 1,
-                             "query": {
-                               "term": {
-                                 "cvrNummer": {{{cvrNumber}}}
+            var body = @"
+                            { ""from"" : 0, ""size"" : 1,
+                              ""query"": {
+                                ""term"": {
+                                  ""cvrNummer"": " + cvrNumber + @"
                                 }
                               },
-                             "sort" : [
-                                { "regnskab.regnskabsperiode.slutDato" : {"order" : "desc"}},
-                                { "offentliggoerelsesTidspunkt" : {"order" : "desc"}},
-                                { "sidstOpdateret" : {"order" : "desc"}},
-                                { "indlaesningsTidspunkt" : {"order" : "desc"}},
-                                "_score"
-                                ]                            }
-                        """.Trim();
-
-
+                              ""sort"" : [
+                                { ""regnskab.regnskabsperiode.slutDato"" : { ""order"" : ""desc"" } },
+                                { ""offentliggoerelsesTidspunkt"" : { ""order"" : ""desc"" } },
+                                { ""sidstOpdateret"" : { ""order"" : ""desc"" } },
+                                { ""indlaesningsTidspunkt"" : { ""order"" : ""desc"" } },
+                                ""_score""
+                              ]
+                            }
+                        ".Trim();
 
             request.AddParameter("application/json", body, ParameterType.RequestBody);
 
-            var response = client.Execute<XbrlResponse>(request);
+            var response = client.Execute(request);
+            var responseData = response.IsSuccessful
+                ? JsonConvert.DeserializeObject<XbrlResponse>(response.Content)
+                : null;
 
-            if (response.Data is { Hits: not null })
+            if (responseData is { Hits: not null })
             {
-                var hit = response.Data.Hits.hits.FirstOrDefault();
+                var hit = responseData.Hits.hits.FirstOrDefault();
                 return hit != null ? new Result<Offentliggoerelse>(response.Content, hit.Source) : null;
             }
 

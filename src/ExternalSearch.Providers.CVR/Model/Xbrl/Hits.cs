@@ -10,7 +10,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Model.Xbrl
 		public int Total { get; set; }
 
 		[JsonProperty("max_score")]
-		public double MaxScore { get; set; }
+		public double? MaxScore { get; set; }
 
 		[JsonProperty("hits")]
 		public List<Hit> hits { get; set; }

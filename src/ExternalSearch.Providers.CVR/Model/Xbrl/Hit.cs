@@ -15,7 +15,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Model.Xbrl
 		public string Id { get; set; }
 
 		[JsonProperty("_score")]
-		public double Score { get; set; }
+		public double? Score { get; set; }
 
 		[JsonProperty("_source")]
 		public Offentliggoerelse Source { get; set; }

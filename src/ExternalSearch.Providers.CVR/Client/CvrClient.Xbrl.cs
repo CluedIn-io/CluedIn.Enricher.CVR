@@ -22,7 +22,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
             var client  = new RestClient(url);
             var request = new RestRequest { Method = RestSharpCompat.HttpGet };
 
-            var response = client.Execute<XbrlResponse>(request);
+            var response = client.Execute(request);
 
             switch (response.StatusCode)
             {
