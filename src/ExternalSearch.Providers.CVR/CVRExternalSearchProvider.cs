@@ -502,7 +502,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
 
             request.AddParameter("application/json", body, ParameterType.RequestBody);
 
-            var response = client.Execute<CompanyResult>(request);
+            var response = client.Execute(request);
 
             if (!response.IsSuccessful)
             {
@@ -532,7 +532,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             request = new RestRequest { Method = RestSharpCompat.HttpPost };
 
             request.AddParameter("application/json", searchByNameBody, ParameterType.RequestBody);
-            var searchByNameResponse = client.Execute<CompanyResult>(request);
+            var searchByNameResponse = client.Execute(request);
 
             return ConstructVerifyConnectionResponse(searchByNameResponse);
         }

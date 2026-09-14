@@ -6,6 +6,7 @@ using CluedIn.ExternalSearch.Providers.CVR.Model;
 using CluedIn.ExternalSearch.Providers.CVR.Model.Xbrl;
 
 using RestSharp;
+using Newtonsoft.Json;
 
 namespace CluedIn.ExternalSearch.Providers.CVR.Client
 {
@@ -36,11 +37,12 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
 
             request.AddParameter("application/json", body, ParameterType.RequestBody);
 
-            var response = client.Execute<XbrlResponse>(request);
+            var response = client.Execute(request);
+            var responseData = JsonConvert.DeserializeObject<XbrlResponse>(response.Content);
 
-            if (response.Data is { Hits: not null })
+            if (responseData is { Hits: not null })
             {
-                var hit = response.Data.Hits.hits.FirstOrDefault();
+                var hit = responseData.Hits.hits.FirstOrDefault();
                 return hit != null ? new Result<Offentliggoerelse>(response.Content, hit.Source) : null;
             }
 

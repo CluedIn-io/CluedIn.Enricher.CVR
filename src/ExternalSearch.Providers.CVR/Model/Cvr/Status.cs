@@ -12,7 +12,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Model.Cvr
 		public string Statustekst { get; set; }
 
 		[JsonProperty("kreditoplysningkode")]
-		public int Kreditoplysningkode { get; set; }
+		public int? Kreditoplysningkode { get; set; }
 
 		[JsonProperty("kreditoplysningtekst")]
 		public string Kreditoplysningtekst { get; set; }
