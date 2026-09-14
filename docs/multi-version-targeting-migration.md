@@ -171,3 +171,23 @@ all three `Integration tests` legs, and `Multi-version: publish` passed.
 - [x] Source — RestSharp 106-vs-114 break fixed via new `RestSharpCompat.cs`; `Nager.PublicSuffix` 2.4.0-vs-3.8.0 break fixed in `DomainName.cs`; all `src/` projects build 0 errors on all three legs
 - [x] `GitVersion.yml` — duplicate `ignore:` key bug found and fixed; resolves to real `1.0.0`, verified with pinned GitVersion.Tool 5.9.0
 - [x] Pushed and confirmed CI green end-to-end — PR #45, build 151979, all legs + publish passed on the first run
+
+---
+
+## Addendum — version baseline moved from 1.0.0 to 100.0.0
+
+Status: **Done**
+
+Resetting to `1.0.0` (Step 6 above) would have meant this repo's own version number appeared to
+"go backwards" for anyone who'd seen it at `4.x`/`5.x` under the old single-version scheme -
+confusing, since the CluedIn-version targeting is now carried entirely by the package suffix
+(`.470`/`.480`/`.500`), not this number. Moved the baseline to `100.0` instead, before any real
+`1.0.0` stable release ever shipped.
+
+Unlike the original reset, no `commits-before`/`ignore` trick is needed: `next-version` only needs
+help overriding a reachable tag when the new value is *lower* than that tag (`1.0` vs. the
+pre-existing `4.6.2` needed it); `100.0` is already higher than every pre-existing tag, so it wins
+on its own. Verified via a real local `dotnet-gitversion` run (pinned tool version 5.9.0):
+`MajorMinorPatch: "100.0.0"`.
+
+`docs/1.0.0-release-notes.md` renamed to `docs/100.0.0-release-notes.md` to match.
