@@ -44,6 +44,17 @@
     <AssemblyTitle>$(MSBuildProjectName)</AssemblyTitle>
     <AssemblyName>$(Product).$(AssemblyTitle)</AssemblyName>
     <RootNamespace>$(AssemblyName)</RootNamespace>
+    <!-- Multi-version targeting: PackageId is derived here (from the same $(_CluedInVersionOnly)
+         already computed above for DefineConstants), not passed as a raw -p:PackageId= pipeline
+         override - a raw override on an outer project doesn't reach a ProjectReference's own
+         package identity when NuGet computes that dependency for the nuspec (same class of
+         limitation as TargetFramework above). Confirmed via a real repro in Azure-Extensions
+         (CluedIn-io/Azure-Extensions#631): the .Provider wrapper project here ProjectReferences the
+         core ExternalSearch.Providers.CVR project, so the same bug applies - packing the wrapper
+         with a raw -p:PackageId= override produced a nuspec dependency on the plain, unsuffixed core
+         package. Gated on CluedInMultiVersionTargetFramework (same as TargetFramework above) so
+         local development (no pipeline overrides) keeps the plain $(AssemblyName) as PackageId. -->
+    <PackageId Condition="'$(CluedInMultiVersionTargetFramework)' != ''">$(AssemblyName).$(_CluedInVersionOnly.Replace('.', ''))</PackageId>
   </PropertyGroup>
 
   <PropertyGroup Label="Package Metadata">

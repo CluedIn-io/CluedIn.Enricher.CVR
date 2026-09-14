@@ -15,15 +15,20 @@ using Newtonsoft.Json.Linq;
 using RestSharp;
 
 #if CLUEDIN_V50
-using CvrCompanyResponse = RestSharp.RestResponse<CluedIn.ExternalSearch.Providers.CVR.Model.Cvr.CompanyResult>;
+using CvrResponse = RestSharp.RestResponse;
 #else
-using CvrCompanyResponse = RestSharp.IRestResponse<CluedIn.ExternalSearch.Providers.CVR.Model.Cvr.CompanyResult>;
+using CvrResponse = RestSharp.IRestResponse;
 #endif
 
 namespace CluedIn.ExternalSearch.Providers.CVR.Client
 {
     public partial class CvrClient
     {
+        private static readonly JsonSerializerSettings ResponseJsonSettings = new()
+        {
+            NullValueHandling = NullValueHandling.Ignore
+        };
+
         public Result<CvrOrganization> GetCompanyByCvrNumber(int cvrNumber)
         {
             return CallCvr(uri => GetCompanyByCvrNumber(cvrNumber, uri));
@@ -140,7 +145,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
             );
         }
 
-        private IEnumerable<Result<CvrOrganization>> BuildHits(IEnumerable<Hit> hits, CvrCompanyResponse response, JObject json, string name, bool matchPastNames)
+        private IEnumerable<Result<CvrOrganization>> BuildHits(IEnumerable<Hit> hits, CvrResponse response, JObject json, string name, bool matchPastNames)
         {
             if (hits == null || string.IsNullOrEmpty(name)) yield break;
 
@@ -149,7 +154,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
             yield return CreateCompanyResult(hit, json);
         }
 
-        private T GetCompanyResult<T>(string queryBody, Uri endPoint, Func<IEnumerable<Hit>, CvrCompanyResponse, JObject, string, bool, T> resultFunc, string name, bool matchPastNames)
+        private T GetCompanyResult<T>(string queryBody, Uri endPoint, Func<IEnumerable<Hit>, CvrResponse, JObject, string, bool, T> resultFunc, string name, bool matchPastNames)
         {
             var userInfo = endPoint.UserInfo;
             NetworkCredential credentials = null;
@@ -167,13 +172,16 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
 
             request.AddParameter("application/json", body, ParameterType.RequestBody);
 
-            var response = client.Execute<CompanyResult>(request);
+            var response = client.Execute(request);
+var responseData = response.IsSuccessful
+                ? JsonConvert.DeserializeObject<CompanyResult>(response.Content, ResponseJsonSettings)
+                : null;
 
-            if (response.Data is { hits: not null })
+            if (responseData is { hits: not null })
             {
                 var json = JObject.Parse(response.Content);
 
-                return resultFunc(response.Data?.hits?.hits, response, json, name, matchPastNames);
+                return resultFunc(responseData.hits.hits, response, json, name, matchPastNames);
             }
 
             if (response.StatusCode == HttpStatusCode.NotFound)
@@ -240,7 +248,10 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
                 result.AlternateNames.Remove(result.Name);
 
             var date = DateTime.UtcNow;
-            var life = org.livsforloeb.OrderByDescending(l => l.periode.GyldigFra).FirstOrDefault();
+            var life = org.livsforloeb?
+                .Where(l => l?.periode?.GyldigFra != null)
+                .OrderByDescending(l => l.periode.GyldigFra)
+                .FirstOrDefault();
 
             if (org.virksomhedMetadata.NyesteStatus != null)
             {
@@ -250,7 +261,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
 
             result.Status                       = org.virksomhedMetadata.SammensatStatus;
             result.FoundingDate                 = org.virksomhedMetadata.StiftelsesDato;
-            result.StartDate                    = life != null ? life.periode.GyldigFra : result.FoundingDate;
+            result.StartDate                    = life?.periode?.GyldigFra ?? result.FoundingDate;
             result.EndDate                      = life?.periode.GyldigTil;
 
             if (result.EndDate != null)
@@ -375,7 +386,9 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Client
 
         private bool IsCurrent(Periode period, DateTime date)
         {
-            return period.GyldigFra <= date && (!period.GyldigTil.HasValue || period.GyldigTil.Value >= date);
+            return period?.GyldigFra is DateTime validFrom
+                && validFrom <= date
+                && (!period.GyldigTil.HasValue || period.GyldigTil.Value >= date);
         }
     }
 }
