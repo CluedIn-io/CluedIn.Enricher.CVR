@@ -72,4 +72,4 @@ jobs:
       multiVersionCluedInTargets:
         - cluedInVersion: "4.7.0"
         - cluedInVersion: "4.8.0"
-        - cluedInVersion: "5.0.0-beta.*"
+        - cluedInVersion: "5.0.0"
