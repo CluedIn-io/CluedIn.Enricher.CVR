@@ -26,6 +26,11 @@ using CluedIn.ExternalSearch.Providers.CVR.Vocabularies;
 using CluedIn.Processing.EntityResolution;
 using Newtonsoft.Json;
 using RestSharp;
+#if CLUEDIN_V50
+using CvrRestResponseBase = RestSharp.RestResponse;
+#else
+using CvrRestResponseBase = RestSharp.IRestResponse;
+#endif
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -122,7 +127,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             {
                 var hosts = website.Where(UriUtility.IsValid).Select(u => new Uri(u).Host.ToLowerInvariant()).Distinct();
 
-                if (hosts.Any(h => DomainName.TryParse(h, out var domain) && string.Equals(domain.TLD, "dk", StringComparison.InvariantCultureIgnoreCase)))
+                if (hosts.Any(h => DomainName.TryParse(h, out var domain) && string.Equals(DomainName.GetTopLevelDomain(domain), "dk", StringComparison.InvariantCultureIgnoreCase)))
                     namePostFixFilter = _ => false;
             }
 
@@ -322,7 +327,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR
             }
         }
 
-        private ConnectionVerificationResult ConstructVerifyConnectionResponse(IRestResponse response)
+        private ConnectionVerificationResult ConstructVerifyConnectionResponse(CvrRestResponseBase response)
         {
             var errorMessageBase = $"{Constants.ProviderName} returned \"{(int)response.StatusCode} {response.StatusDescription}\".";
             if (response.StatusCode is HttpStatusCode.Unauthorized)
@@ -484,20 +489,20 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                     }
                 }).Trim();
 
-            var client = new RestClient(endpoint);
-            var request = new RestRequest(Method.POST);
-
             var userInfo = endpoint.UserInfo;
+            NetworkCredential credentials = null;
             if (!string.IsNullOrEmpty(userInfo))
             {
                 var parts = userInfo.Split(':');
-
-                request.Credentials = new NetworkCredential(parts[0], parts[1]);
+                credentials = new NetworkCredential(parts[0], parts[1]);
             }
+
+            var client = RestSharpCompat.CreateClient(endpoint, credentials);
+            var request = new RestRequest { Method = RestSharpCompat.HttpPost };
 
             request.AddParameter("application/json", body, ParameterType.RequestBody);
 
-            var response = client.Execute<CompanyResult>(request);
+            var response = client.Execute(request);
 
             if (!response.IsSuccessful)
             {
@@ -524,17 +529,10 @@ namespace CluedIn.ExternalSearch.Providers.CVR
                 }
             });
 
-            request = new RestRequest(Method.POST);
-
-            if (!string.IsNullOrEmpty(userInfo))
-            {
-                var parts = userInfo.Split(':');
-
-                request.Credentials = new NetworkCredential(parts[0], parts[1]);
-            }
+            request = new RestRequest { Method = RestSharpCompat.HttpPost };
 
             request.AddParameter("application/json", searchByNameBody, ParameterType.RequestBody);
-            var searchByNameResponse = client.Execute<CompanyResult>(request);
+            var searchByNameResponse = client.Execute(request);
 
             return ConstructVerifyConnectionResponse(searchByNameResponse);
         }

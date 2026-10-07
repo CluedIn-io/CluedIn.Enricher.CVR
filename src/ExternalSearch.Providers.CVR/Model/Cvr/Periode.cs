@@ -7,7 +7,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Model.Cvr
 	{
 		[JsonProperty("gyldigFra")]
 		[JsonConverter(typeof(YearMonthDayDateConverter))]
-		public DateTime GyldigFra { get; set; }
+		public DateTime? GyldigFra { get; set; }
 
 		[JsonProperty("gyldigTil")]
 		[JsonConverter(typeof(YearMonthDayDateConverter))]

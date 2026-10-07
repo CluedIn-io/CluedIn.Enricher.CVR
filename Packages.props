@@ -1,38 +1,47 @@
 <Project>
   <PropertyGroup Label="Dependency Versions">
-    <_ComponentHost>3.2.1</_ComponentHost>
-    <_AutoFixture>4.11.0</_AutoFixture>
-    <_CluedIn>4.6.0</_CluedIn>
+    <_AutoFixture>5.0.0-preview0012</_AutoFixture>
+    <!-- Guarded so the pipeline's -p:_CluedIn=<version> per build leg wins; Directory.Build.props
+         sets the same default/guard earlier for DefineConstants derivation. -->
+    <_CluedIn Condition="'$(_CluedIn)' == ''">5.0.0-*</_CluedIn>
+    <_CluedInPackageSuffix>$(_CluedInVersionOnly.Replace('.', ''))</_CluedInPackageSuffix>
   </PropertyGroup>
   <ItemGroup>
     <!--
-        Specified versions for dependencies in test projects
+        Specified versions for dependencies in test projects, common to every target
+
         MUST SPECIFY IN CSPROJ AS <PackageReference Name="<depName>" />
     -->
-    <PackageReference Update="Microsoft.NET.Test.Sdk" Version="16.5.0" />
-    <PackageReference Update="AutoFixture.Xunit2" Version="$(_AutoFixture)" />
-    <PackageReference Update="AutoFixture.Idioms" Version="$(_AutoFixture)" />
-    <PackageReference Update="AutoFixture.AutoMoq" Version="$(_AutoFixture)" />
     <PackageReference Update="coverlet.msbuild" Version="2.8.0" />
-    <PackageReference Update="Serilog.Sinks.XUnit" Version="1.0.21" />
-    <PackageReference Update="xunit" Version="2.4.1" />
-    <PackageReference Update="xunit.runner.visualstudio" Version="2.4.1" />
     <PackageReference Update="Moq" Version="4.13.1" />
     <PackageReference Update="Shouldly" Version="3.0.2" />
-    <PackageReference Update="CluedIn.Testing.Base" Version="4.0.0" />
+  </ItemGroup>
+  <!-- xunit v3 + AutoFixture.Xunit3 for net10.0 (CluedIn 5.0+); xunit v2 + AutoFixture.Xunit2 for
+       net6.0 (CluedIn < 5.0), matching the xunit generation each TFM's tooling actually supports. -->
+  <ItemGroup Condition="$(DefineConstants.Contains('CLUEDIN_V50'))">
+    <PackageReference Update="Microsoft.NET.Test.Sdk" Version="18.3.0" />
+    <PackageReference Update="AutoFixture.Xunit3" Version="$(_AutoFixture)" />
+    <PackageReference Update="xunit.v3" Version="3.2.2" />
+    <PackageReference Update="xunit.runner.visualstudio" Version="3.1.5" />
+  </ItemGroup>
+  <ItemGroup Condition="!$(DefineConstants.Contains('CLUEDIN_V50'))">
+    <PackageReference Update="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Update="AutoFixture.Xunit2" Version="4.18.0" />
+    <PackageReference Update="xunit" Version="2.9.3" />
+    <PackageReference Update="xunit.runner.visualstudio" Version="2.8.2" />
   </ItemGroup>
   <ItemGroup>
     <!--
         Specified versions for dependencies across the solution
         MUST SPECIFY IN CSPROJ AS <PackageReference Name="<depName>" />
     -->
-    <PackageReference Update="ComponentHost" Version="$(_ComponentHost)" />
     <PackageReference Update="CluedIn.Crawling" Version="$(_CluedIn)" />
-    <PackageReference Update="CluedIn.CrawlerIntegrationTesting" Version="4.0.0" />
     <PackageReference Update="CluedIn.Core" Version="$(_CluedIn)" />
-    <PackageReference Update="CluedIn.Core.Agent" Version="$(_CluedIn)" />
-    <PackageReference Update="CluedIn.Server" Version="$(_CluedIn)" />
-    <PackageReference Update="CluedIn.Server.Common.WebApi" Version="$(_CluedIn)" />
     <PackageReference Update="CluedIn.ExternalSearch" Version="$(_CluedIn)" />
+    <!-- CluedIn.Testing.Base/CluedIn.CrawlerIntegrationTesting publish under a per-leg suffixed
+         PackageId (e.g. .470/.480/.500 - dotless Major.Minor.Patch), not a single package ID with
+         $(_CluedIn) as the version - see CluedIn.Enricher.GoogleMaps' migration doc for why. -->
+    <PackageReference Update="CluedIn.Testing.Base.$(_CluedInPackageSuffix)" Version="1.0.0-*" />
+    <PackageReference Update="CluedIn.CrawlerIntegrationTesting.$(_CluedInPackageSuffix)" Version="1.0.0-*" />
   </ItemGroup>
 </Project>

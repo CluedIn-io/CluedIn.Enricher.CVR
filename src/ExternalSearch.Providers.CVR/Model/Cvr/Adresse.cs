@@ -14,7 +14,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Model.Cvr
 		public string Fritekst { get; set; }
 
 		[JsonProperty("vejkode")]
-		public int Vejkode { get; set; }
+		public int? Vejkode { get; set; }
 
 		[JsonProperty("kommune")]
 		public Kommune Kommune { get; set; }
@@ -56,7 +56,7 @@ namespace CluedIn.ExternalSearch.Providers.CVR.Model.Cvr
 		public string Bynavn { get; set; }
 
 		[JsonProperty("postnummer")]
-		public int Postnummer { get; set; }
+		public int? Postnummer { get; set; }
 
 		[JsonProperty("postdistrikt")]
 		public string Postdistrikt { get; set; }

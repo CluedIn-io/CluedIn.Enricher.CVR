@@ -1,11 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-		<LangVersion>latest</LangVersion>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-		<LangVersion>latest</LangVersion>
-	</PropertyGroup>
 
     <ItemGroup>
         <None Remove="D:\Projects\CluedIn\CluedIn.Enricher.CVR\build\assets\nugetlogo.png" />
@@ -13,7 +6,6 @@
 
     <ItemGroup>
         <PackageReference Include="CluedIn.Core" />
-        <PackageReference Include="ComponentHost" />
     </ItemGroup>
 
     <ItemGroup>
