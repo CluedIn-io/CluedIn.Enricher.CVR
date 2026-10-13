@@ -133,6 +133,7 @@ public class CvrSearchProviderProvider : ProviderBase, IExtendedProviderMetadata
         { "vocabKeyPrefix", CvrVocabulary.Organization.KeyPrefix},
         { "autoSubmission", false },
         { "dataSourceSetId", string.Empty },
+        { "fieldGroups", Constants.FieldGroups }, // for UI
     };
 
     public Dictionary<string, HashSet<string>> ValidRequiredFieldConfigurationCombinations => new() 
